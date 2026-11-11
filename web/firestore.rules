@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ĐỔI "doi-ma-nay-di" thành mã bí mật của bạn (chữ, số, gạch ngang; nên dài 12 ký tự trở lên).
+    // Link sửa sẽ có dạng: https://trang-cua-ban/?ma=<mã này>
+    function editCode() { return 'doi-ma-nay-di'; }
+
+    function signedIn() { return request.auth != null; }
+    function isEditor() {
+      return signedIn() && exists(/databases/$(database)/documents/editors/$(request.auth.uid));
+    }
+
+    // Danh sách máy được quyền sửa. Không ai đọc được của người khác.
+    match /editors/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['code', 'at'])
+        && request.resource.data.code == editCode();
+    }
+
+    // "Tôi là ai": mỗi máy chỉ sửa được dòng của chính mình.
+    match /people/{uid} {
+      allow read: if true;
+      allow write: if isEditor() && request.auth.uid == uid;
+    }
+
+    // Dữ liệu chuyến đi: ai có link đều đọc được, chỉ máy có mã sửa mới ghi được.
+    match /{col}/{id} {
+      allow read: if col in ['trip', 'members', 'activities', 'history', 'meta'];
+      allow write: if isEditor() && col in ['trip', 'members', 'activities', 'history', 'meta'];
+    }
+  }
+}

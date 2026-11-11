@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Lịch trình cả đoàn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap">
+<style>
+/* Layout: sticky trip header + tab bar, single readable column of day timelines; person grid scrolls sideways inside its own box. */
+:root{
+  --bg:#EDF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --ink:#13232A; --muted:#58696E; --line:#D5DEDC;
+  --accent:#0B6B63; --accent-ink:#FFFFFF; --accent-soft:#D6ECE8;
+  --danger:#B42318; --danger-soft:#FCE6E3; --warn:#8A5300; --warn-soft:#FFF0D2;
+  --t-move:#2E66A8; --t-food:#B9440E; --t-see:#0B6B63; --t-stay:#6A47AA; --t-shop:#A8336F; --t-other:#5B6B70;
+  --p1:#2E66A8; --p2:#B9440E; --p3:#0B7A6F; --p4:#6A47AA; --p5:#A8336F; --p6:#7A6400; --p7:#0E6E8C; --p8:#A3261B;
+  --shadow:0 1px 2px rgba(19,35,42,.06),0 4px 14px rgba(19,35,42,.06);
+  --f-display:"Lexend","Be Vietnam Pro",system-ui,sans-serif;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1618; --surface:#142124; --surface-2:#1A2A2E; --ink:#E3EDEC; --muted:#93A5A8; --line:#29393D;
+  --accent:#43B9AC; --accent-ink:#04201D; --accent-soft:#163E3A;
+  --danger:#F28B82; --danger-soft:#3A1B19; --warn:#F0B45A; --warn-soft:#33260F;
+  --t-move:#7FAEE6; --t-food:#F2925E; --t-see:#5FCABD; --t-stay:#B49BE8; --t-shop:#EE8DBE; --t-other:#A3B3B6;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0D1618; --surface:#142124; --surface-2:#1A2A2E; --ink:#E3EDEC; --muted:#93A5A8; --line:#29393D;
+  --accent:#43B9AC; --accent-ink:#04201D; --accent-soft:#163E3A;
+  --danger:#F28B82; --danger-soft:#3A1B19; --warn:#F0B45A; --warn-soft:#33260F;
+  --t-move:#7FAEE6; --t-food:#F2925E; --t-see:#5FCABD; --t-stay:#B49BE8; --t-shop:#EE8DBE; --t-other:#A3B3B6;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;
+}
+*{box-sizing:border-box}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
+.trip-row{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.trip-id{min-width:0;flex:1 1 240px}
+.eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-family:var(--f-display);font-weight:600;font-size:clamp(20px,4.6vw,26px);line-height:1.2;margin:2px 0 0;text-wrap:balance;overflow-wrap:anywhere}
+.trip-meta{color:var(--muted);font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs a{padding:9px 12px 11px;text-decoration:none;color:var(--muted);font-weight:600;font-size:14px;border-bottom:2.5px solid transparent;white-space:nowrap}
+.tabs a[aria-current="page"]{color:var(--accent);border-color:var(--accent)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-size:14px;font-weight:600;cursor:pointer;min-height:36px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.danger.armed{background:var(--danger);color:var(--surface)}
+.btn.ghost{border-color:transparent;background:transparent;padding:6px 8px}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn svg{width:16px;height:16px;flex:none}
+
+main{padding-block:16px 120px}
+.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;padding:10px 14px;border-radius:var(--r);font-size:14px;margin-bottom:12px;border:1px solid var(--line);background:var(--surface)}
+.banner.info{background:var(--accent-soft);border-color:transparent}
+.banner.warn{background:var(--warn-soft);border-color:transparent;color:var(--ink)}
+.banner.err{background:var(--danger-soft);border-color:transparent}
+
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:thin}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px 5px 6px;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.chip.plain{padding-left:12px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+.day{margin-bottom:22px}
+.day-head{display:flex;align-items:baseline;gap:10px;justify-content:space-between;padding:6px 2px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.day-head h2{font-family:var(--f-display);font-size:17px;font-weight:600;margin:0}
+.day-head h2 .n{color:var(--accent);margin-right:6px}
+.day-head .cnt{color:var(--muted);font-size:13px}
+.empty-day{color:var(--muted);font-size:14px;padding:6px 2px 4px}
+
+.act{display:grid;grid-template-columns:64px 1fr;gap:10px;margin-bottom:10px}
+.act .time{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;padding-top:12px;text-align:right;line-height:1.25}
+.act .time small{display:block;color:var(--muted);font-weight:500}
+.card{min-width:0;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--tc,var(--line));border-radius:var(--r);padding:10px 12px;box-shadow:var(--shadow)}
+.card.conflict{border-color:var(--danger);border-left-color:var(--danger);background:linear-gradient(var(--danger-soft),var(--danger-soft)) top/100% 0 no-repeat,var(--surface)}
+.card-top{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.card h3{margin:0;font-size:15.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.type{display:inline-block;font-size:12px;font-weight:600;color:var(--tc);letter-spacing:.02em;margin-bottom:2px}
+.place{display:flex;gap:4px;align-items:flex-start;color:var(--muted);font-size:14px;margin-top:3px;overflow-wrap:anywhere}
+.place svg{width:14px;height:14px;flex:none;margin-top:3px}
+.people{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.avs{display:flex}
+.av{width:24px;height:24px;border-radius:50%;background:var(--c);color:#fff;font-size:11px;font-weight:700;display:inline-grid;place-items:center;border:2px solid var(--surface);margin-left:-6px;flex:none}
+.avs .av:first-child{margin-left:0}
+.chip .av{margin-left:0;border:0;width:22px;height:22px}
+.people .names{font-size:13px;color:var(--muted);min-width:0}
+.allbadge{font-size:12px;font-weight:600;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:999px}
+.note{margin-top:8px;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface-2);border-radius:6px;padding:6px 9px}
+.alert{margin-top:8px;font-size:13px;color:var(--danger);font-weight:600;display:flex;gap:6px;align-items:flex-start}
+.alert svg{width:15px;height:15px;flex:none;margin-top:2px}
+.meta{margin-top:8px;font-size:12px;color:var(--muted)}
+.card-acts{display:flex;gap:2px;flex:none}
+.locked{font-size:12px;color:var(--muted)}
+
+.grid-box{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table.grid{border-collapse:separate;border-spacing:0;min-width:100%;font-size:13px}
+.grid th,.grid td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px;vertical-align:top;text-align:left}
+.grid thead th{background:var(--surface-2);font-weight:600;white-space:nowrap;position:sticky;top:0}
+.grid th.who{position:sticky;left:0;background:var(--surface);z-index:1;min-width:110px;white-space:nowrap}
+.grid thead th.who{background:var(--surface-2);z-index:2}
+.grid td{min-width:150px}
+.gi{display:flex;gap:6px;padding:3px 6px;border-radius:5px;margin-bottom:3px;background:var(--surface-2);border-left:3px solid var(--tc)}
+.gi .t{font-variant-numeric:tabular-nums;font-weight:600;flex:none}
+.gi.bad{background:var(--danger-soft);border-left-color:var(--danger)}
+.free{color:var(--accent);font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin:0 0 10px}
+
+.hgroup{margin-bottom:18px}
+.hgroup h2{font-family:var(--f-display);font-size:15px;font-weight:600;margin:0 0 8px;color:var(--muted)}
+.hitem{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}
+.hline{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.hline .ht{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.kind{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--surface-2)}
+.kind.add,.kind.restore{background:var(--accent-soft);color:var(--accent)}
+.kind.delete{background:var(--danger-soft);color:var(--danger)}
+.kind.edit,.kind.trip,.kind.member{background:var(--warn-soft);color:var(--warn)}
+.hitem ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.hitem li{overflow-wrap:anywhere}
+.hitem .b{color:var(--muted);text-decoration:line-through}
+.hitem .arrow{color:var(--muted);margin:0 4px}
+
+.fab{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:6;box-shadow:0 6px 20px rgba(0,0,0,.22);border-radius:999px;padding:12px 18px;font-size:15px}
+
+.state{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:28px 20px;text-align:center}
+.state h2{font-family:var(--f-display);font-weight:600;font-size:19px;margin:0 0 6px}
+.state p{color:var(--muted);margin:0 auto 14px;max-width:46ch}
+.sk{background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:sh 1.3s linear infinite;border-radius:8px;height:72px;margin-bottom:10px}
+.sk.s{height:22px;width:40%}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+
+.modal-bg{position:fixed;inset:0;z-index:20;background:rgba(8,16,18,.5);display:flex;align-items:flex-end;justify-content:center}
+@media (min-width:640px){.modal-bg{align-items:center;padding:24px}}
+.modal{background:var(--surface);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px max(16px,env(safe-area-inset-left,0px)) calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 10px 40px rgba(0,0,0,.3)}
+@media (min-width:640px){.modal{border-radius:14px;padding:22px}}
+.modal h2{font-family:var(--f-display);font-weight:600;font-size:19px;margin:0 0 14px}
+.fields{display:flex;flex-direction:column;gap:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted);min-width:0}
+label.f .req{color:var(--danger)}
+.in{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:9px 10px;font-size:16px;color:var(--ink);font-weight:400;min-width:0}
+textarea.in{min-height:70px;resize:vertical}
+.in[aria-invalid="true"]{border-color:var(--danger)}
+.ferr{color:var(--danger);font-size:13px;font-weight:600}
+.typepick,.peoplepick{display:flex;flex-wrap:wrap;gap:6px}
+.typepick label,.peoplepick label{cursor:pointer}
+.typepick input,.peoplepick input{position:absolute;opacity:0;pointer-events:none}
+.typepick span,.peoplepick span.pc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:14px;color:var(--ink);font-weight:500;background:var(--surface)}
+.peoplepick span.pc{padding-left:5px}
+.typepick input:checked+span{border-color:var(--tc);background:var(--tc);color:var(--surface)}
+.peoplepick input:checked+span.pc{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.typepick input:focus-visible+span,.peoplepick input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.mfoot .sp{flex:1}
+.sep{border:0;border-top:1px solid var(--line);margin:6px 0}
+.hint{font-size:13px;color:var(--muted);font-weight:400}
+.switch{display:flex;gap:10px;align-items:flex-start;font-size:14px;font-weight:500;color:var(--ink)}
+.switch input{width:18px;height:18px;margin-top:2px;accent-color:var(--accent)}
+.mem-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:420px){.mem-grid{grid-template-columns:1fr}}
+.mem-in{display:flex;align-items:center;gap:6px}
+.mem-in .av{margin:0;border:0}
+#copy-text{font-size:14px;min-height:220px;font-family:var(--f-body)}
+
+#toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;flex-direction:column;gap:8px;width:min(92vw,440px);pointer-events:none}
+.toast{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.toast.err{background:var(--danger);color:var(--surface)}
+@media (max-width:480px){.act{grid-template-columns:50px 1fr;gap:8px}.act .time{font-size:13px}.top-actions .lbl{display:none}}
+.me-chip{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.me-chip .av{margin:0;border:0}
+.who-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.who-grid .chip{justify-content:flex-start;padding:8px 12px 8px 8px;border-radius:10px}
+.linkbox{display:flex;gap:6px}
+.linkbox .in{font-size:13px}
+pre.code{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:12px}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ===== CẤU HÌNH: dán cấu hình Firebase của bạn vào đây (xem HUONG-DAN.md) ===== */
+window.FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="trip-row">
+      <div class="trip-id" id="trip-id">
+        <div class="eyebrow">Lịch trình nhóm</div>
+        <h1>Đang tải chuyến đi…</h1>
+      </div>
+      <div class="top-actions" id="top-actions"></div>
+    </div>
+    <nav class="tabs" aria-label="Chế độ xem">
+      <a href="#ngay" data-tab="ngay">Theo ngày</a>
+      <a href="#nguoi" data-tab="nguoi">Theo người</a>
+      <a href="#lich-su" data-tab="lich-su">Lịch sử</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="main" aria-live="polite"></main>
+<button class="btn primary fab" id="fab" data-act="add" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm hoạt động
+</button>
+<div id="modal-root"></div>
+<div id="toasts" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- constants ---------- */
+const TYPES=[{k:"move",l:"Di chuyển"},{k:"food",l:"Ăn uống"},{k:"see",l:"Tham quan"},{k:"stay",l:"Lưu trú"},{k:"shop",l:"Mua sắm"},{k:"other",l:"Khác"}];
+const TYPE_L=Object.fromEntries(TYPES.map(t=>[t.k,t.l]));
+const MIDS=["m1","m2","m3","m4","m5","m6","m7","m8"];
+const ACT_FIELDS=["title","date","start","end","place","type","people","note"];
+const FL={title:"Tên",date:"Ngày",start:"Giờ bắt đầu",end:"Giờ kết thúc",place:"Địa điểm",type:"Loại",people:"Người tham gia",note:"Ghi chú",
+  tName:"Tên chuyến đi",tDest:"Điểm đến",tStart:"Ngày đi",tEnd:"Ngày về",tLock:"Chỉ người tạo hoặc chủ trang được sửa",name:"Tên"};
+const KIND_L={add:"Thêm hoạt động",edit:"Sửa hoạt động",delete:"Xóa hoạt động",restore:"Khôi phục hoạt động",trip:"Sửa thông tin chuyến đi",member:"Đổi tên thành viên",clear:"Xóa dữ liệu mẫu"};
+const WD=["Chủ nhật","Thứ Hai","Thứ Ba","Thứ Tư","Thứ Năm","Thứ Sáu","Thứ Bảy"];
+const WDS=["CN","T2","T3","T4","T5","T6","T7"];
+const HIST_MAX=300;
+const IC={
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
+  cog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg>',
+  undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>'
+};
+
+/* ---------- state ---------- */
+const S={db:null,user:null,uid:null,isOwner:false,readOnly:false,writeUnknown:false,
+  trip:null,tripLoaded:false,members:{},membersLoaded:false,acts:{},actsLoaded:false,history:[],historyLoaded:false,
+  tab:"ngay",filter:"all",people:{},peopleLoaded:false,editCode:"",notConfigured:false,confirmed:false,stale:false,subError:"",dbMissing:false,booting:true};
+
+/* ---------- helpers ---------- */
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const isDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(s||"");
+const isTime=s=>/^\d{2}:\d{2}$/.test(s||"");
+function parseD(s){const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function isoD(dt){return dt.getFullYear()+"-"+pad(dt.getMonth()+1)+"-"+pad(dt.getDate())}
+function fmtD(s){if(!isDate(s))return s||"";const d=parseD(s);return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear()}
+function fmtDS(s){const d=parseD(s);return pad(d.getDate())+"/"+pad(d.getMonth()+1)}
+function dayLabel(s){const d=parseD(s);return WD[d.getDay()]+", "+fmtDS(s)}
+function fmtTs(ms){if(!ms)return"";const d=new Date(ms);const now=new Date();let s=pad(d.getHours())+":"+pad(d.getMinutes())+" "+pad(d.getDate())+"/"+pad(d.getMonth()+1);if(d.getFullYear()!==now.getFullYear())s+="/"+d.getFullYear();return s}
+function toMin(t){if(!isTime(t))return null;const[h,m]=t.split(":").map(Number);return h*60+m}
+function tripDays(){const t=S.trip;if(!t||!isDate(t.startDate)||!isDate(t.endDate))return[];const out=[];const d=parseD(t.startDate),e=parseD(t.endDate);let i=0;while(d<=e&&i<62){out.push(isoD(d));d.setDate(d.getDate()+1);i++}return out}
+function mName(id){const m=S.members[id];const n=m&&typeof m.name==="string"&&m.name.trim();return n||("Thành viên "+(MIDS.indexOf(id)+1))}
+function mIdx(id){return MIDS.indexOf(id)+1||1}
+function initial(name){const w=String(name).trim().split(/\s+/);return (w[w.length-1]||"?").charAt(0).toUpperCase()}
+function av(id){const n=mName(id);return `<span class="av" style="--c:var(--p${mIdx(id)})" title="${esc(n)}" aria-hidden="true">${esc(initial(n))}</span>`}
+function validPeople(p){return Array.isArray(p)?MIDS.filter(id=>p.includes(id)):[]}
+function isAll(p){return validPeople(p).length===MIDS.length}
+function peopleText(p){const v=validPeople(p);if(v.length===MIDS.length)return"Cả đoàn";if(!v.length)return"(chưa có ai)";return v.map(mName).join(", ")}
+function typeOf(a){return TYPE_L[a.type]?a.type:"other"}
+function timeText(a){if(!isTime(a.start))return"";return a.start+(isTime(a.end)?"–"+a.end:"")}
+function actorName(id){if(!id)return"Dữ liệu mẫu";const p=S.people[id];const me=id===S.uid?" (bạn)":"";if(p&&MIDS.includes(p.memberId))return mName(p.memberId)+me;return id===S.uid?"Bạn":"Một máy chưa chọn tên"}
+function sortActs(list){return list.slice().sort((a,b)=>{const sa=toMin(a.start),sb=toMin(b.start);if(sa==null&&sb!=null)return-1;if(sb==null&&sa!=null)return 1;if(sa!==sb)return sa-sb;const ea=toMin(a.end)??sa,eb=toMin(b.end)??sb;if(ea!==eb)return(ea??0)-(eb??0);return String(a.title).localeCompare(String(b.title),"vi")})}
+function actList(){return Object.values(S.acts)}
+function canModify(a){if(S.readOnly)return false;if(!S.trip||!S.trip.lockToCreator)return true;if(S.isOwner)return true;return !!(a.createdBy&&a.createdBy===S.uid)}
+function hasSample(){return (S.trip&&S.trip.sample)||actList().some(a=>a.sample)||MIDS.some(id=>S.members[id]&&S.members[id].sample)}
+function cleanAct(a){const o={};ACT_FIELDS.forEach(f=>{o[f]=f==="people"?validPeople(a.people):(a[f]??"")});["createdBy","createdAt","updatedBy","updatedAt"].forEach(f=>{o[f]=a[f]??null});o.sample=!!a.sample;return o}
+
+/* ---------- conflicts ---------- */
+function computeConflicts(){
+  const res={};const byDate={};
+  actList().forEach(a=>{if(toMin(a.start)==null)return;(byDate[a.date]=byDate[a.date]||[]).push(a)});
+  Object.values(byDate).forEach(list=>{
+    for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
+      const a=list[i],b=list[j];
+      const s1=toMin(a.start),e1=toMin(a.end)??s1,s2=toMin(b.start),e2=toMin(b.end)??s2;
+      const overlap=(s1<e2&&s2<e1)||s1===s2;
+      if(!overlap)continue;
+      const pb=validPeople(b.people);const common=validPeople(a.people).filter(x=>pb.includes(x));
+      if(!common.length)continue;
+      (res[a.id]=res[a.id]||[]).push({other:b,members:common});
+      (res[b.id]=res[b.id]||[]).push({other:a,members:common});
+    }
+  });
+  return res;
+}
+
+/* ---------- rendering ---------- */
+const $=id=>document.getElementById(id);
+function render(){
+  renderHeader();
+  const main=$("main");
+  document.querySelectorAll(".tabs a").forEach(a=>a.setAttribute("aria-current",a.dataset.tab===S.tab?"page":"false"));
+  const gb=main.querySelector(".grid-box");const gl=gb?gb.scrollLeft:0;
+  const fl=main.querySelector(".filters");const fs=fl?fl.scrollLeft:0;
+  main.innerHTML=renderBody();
+  const gb2=main.querySelector(".grid-box");if(gb2)gb2.scrollLeft=gl;
+  const fl2=main.querySelector(".filters");if(fl2)fl2.scrollLeft=fs;
+  $("fab").hidden=!(ready()&&S.trip&&!S.readOnly&&S.tab!=="lich-su");
+}
+function ready(){return !S.dbMissing&&S.tripLoaded&&S.membersLoaded&&S.actsLoaded}
+function renderHeader(){
+  const t=S.trip;const box=$("trip-id");
+  if(!ready()){box.innerHTML=`<div class="eyebrow">Lịch trình nhóm</div><h1>${S.dbMissing?"Lịch trình cả đoàn":"Đang tải chuyến đi…"}</h1>`;$("top-actions").innerHTML="";return}
+  if(!t){box.innerHTML=`<div class="eyebrow">Lịch trình nhóm · 8 người</div><h1>Chưa có chuyến đi</h1>`;$("top-actions").innerHTML="";return}
+  const days=tripDays().length;
+  box.innerHTML=`<div class="eyebrow">${esc(t.destination||"Chưa có điểm đến")}</div><h1>${esc(t.name||"Chuyến đi chưa đặt tên")}</h1>
+  <div class="trip-meta">${esc(fmtD(t.startDate))} → ${esc(fmtD(t.endDate))}${days?` · ${days} ngày`:""} · 8 thành viên</div>`;
+  const meP=S.people[S.uid];
+  const meChip=S.readOnly?`<div class="me-chip">Chế độ chỉ xem</div>`:`<div class="me-chip">${meP&&MIDS.includes(meP.memberId)?`${av(meP.memberId)}Bạn là <b>${esc(mName(meP.memberId))}</b>`:"Bạn chưa chọn tên"} · <button class="btn ghost" data-act="whoami" style="min-height:0;padding:2px 6px">Đổi</button></div>`;
+  box.insertAdjacentHTML("beforeend",meChip);
+  $("top-actions").innerHTML=`<button class="btn" data-act="copy">${IC.copy}<span class="lbl">Sao chép lịch</span></button>
+  <button class="btn" data-act="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span class="lbl">Chia sẻ</span></button>
+  ${S.readOnly?"":`<button class="btn" data-act="trip">${IC.cog}<span class="lbl">Chuyến đi & thành viên</span></button>`}`;
+}
+function banners(){
+  let h="";
+  if(S.subError)h+=`<div class="banner err">${esc(S.subError)}</div>`;
+  else if(S.stale)h+=`<div class="banner warn">Chưa kết nối được kho dữ liệu chung. Thông tin bên dưới có thể chưa mới nhất; trang sẽ tự cập nhật khi kết nối lại.</div>`;
+  if(S.readOnly&&ready())h+=`<div class="banner">Bạn đang ở chế độ chỉ xem. Muốn thêm hoặc sửa hoạt động, hãy xin trưởng đoàn link sửa.</div>`;
+  if(ready()&&hasSample())h+=`<div class="banner info"><span>Đây là chuyến mẫu để xem thử. Xóa đi khi cả đoàn bắt đầu nhập lịch thật.</span>${S.readOnly?"":`<button class="btn" data-act="clear-sample">Xóa dữ liệu mẫu</button>`}</div>`;
+  return h;
+}
+function renderBody(){
+  if(S.notConfigured)return `<div class="state"><h2>Trang chưa được kết nối dữ liệu</h2><p>Người tạo trang cần dán cấu hình Firebase vào tệp index.html (mục CẤU HÌNH ở đầu tệp). Xem hướng dẫn trong tệp HUONG-DAN.md.</p></div>`;
+  if(S.dbMissing)return `<div class="state"><h2>Không kết nối được kho dữ liệu chung</h2><p>Kiểm tra kết nối mạng rồi tải lại trang. Nếu vẫn lỗi, báo trưởng đoàn kiểm tra cấu hình Firebase.</p></div>`;
+  if(!ready())return banners()+`<div class="sk s"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>`;
+  if(S.tab==="lich-su")return banners()+renderHistory();
+  if(!S.trip)return banners()+`<div class="state"><h2>Chưa có chuyến đi nào</h2><p>Tạo chuyến đi với tên, điểm đến và ngày đi, ngày về. Sau đó cả đoàn có thể thêm hoạt động cho từng ngày.</p>${S.readOnly?`<p>Bạn đang ở chế độ chỉ xem.</p>`:`<button class="btn primary" data-act="trip">Tạo chuyến đi</button>`}</div>`;
+  return banners()+(S.tab==="nguoi"?renderPeople():renderDays());
+}
+function renderDays(){
+  const conf=computeConflicts();
+  const days=tripDays();
+  let h=`<div class="filters" role="group" aria-label="Lọc theo người"><button class="chip plain" data-act="filter" data-id="all" aria-pressed="${S.filter==="all"}">Cả đoàn</button>`;
+  MIDS.forEach(id=>{h+=`<button class="chip" data-act="filter" data-id="${id}" aria-pressed="${S.filter===id}">${av(id)}${esc(mName(id))}</button>`});
+  h+=`</div>`;
+  const list=actList().filter(a=>S.filter==="all"||validPeople(a.people).includes(S.filter));
+  const nConf=Object.keys(conf).filter(id=>S.filter==="all"||(S.acts[id]&&validPeople(S.acts[id].people).includes(S.filter))).length;
+  if(nConf)h+=`<div class="banner err"><span>${IC.warn.replace("<svg",'<svg style="width:16px;height:16px;vertical-align:-3px;margin-right:6px"')}Có ${nConf} hoạt động bị trùng giờ. Chúng được viền đỏ bên dưới.</span></div>`;
+  days.forEach((d,i)=>{
+    const items=sortActs(list.filter(a=>a.date===d));
+    h+=`<section class="day" id="d-${d}"><div class="day-head"><h2><span class="n">Ngày ${i+1}</span>${esc(dayLabel(d))}</h2>
+    <span class="cnt">${items.length} hoạt động${S.readOnly?"":` · <button class="btn ghost" data-act="add" data-date="${d}">+ Thêm</button>`}</span></div>`;
+    h+=items.length?items.map(a=>actHtml(a,conf[a.id])).join(""):`<div class="empty-day">${S.filter==="all"?"Chưa có hoạt động nào trong ngày này.":esc(mName(S.filter))+" đang rảnh cả ngày."}</div>`;
+    h+=`</section>`;
+  });
+  const out=sortActs(list.filter(a=>!days.includes(a.date)));
+  if(out.length){h+=`<section class="day"><div class="day-head"><h2>Ngoài lịch trình</h2><span class="cnt">Ngày nằm ngoài ngày đi – ngày về</span></div>${out.map(a=>actHtml(a,conf[a.id],true)).join("")}</section>`}
+  return h;
+}
+function actHtml(a,conf,showDate){
+  const tk=typeOf(a);const p=validPeople(a.people);
+  const time=isTime(a.start)?`${esc(a.start)}${isTime(a.end)?`<small>${esc(a.end)}</small>`:""}`:`<small>Cả ngày</small>`;
+  const people=p.length===MIDS.length?`<span class="allbadge">Cả đoàn</span>`:`<span class="avs">${p.map(av).join("")}</span><span class="names">${esc(p.map(mName).join(", "))}</span>`;
+  let alert="";
+  if(conf&&conf.length){alert=conf.map(c=>`<div class="alert">${IC.warn}<span>Trùng giờ với “${esc(c.other.title)}” (${esc(timeText(c.other))}): ${esc(c.members.map(mName).join(", "))}</span></div>`).join("")}
+  const can=canModify(a);
+  const acts=can?`<div class="card-acts"><button class="btn ghost" data-act="edit" data-id="${esc(a.id)}" aria-label="Sửa ${esc(a.title)}">${IC.edit}</button><button class="btn ghost" data-act="del" data-id="${esc(a.id)}" aria-label="Xóa ${esc(a.title)}">${IC.trash}</button></div>`:"";
+  let meta=`Thêm bởi ${esc(actorName(a.createdBy))}`;
+  if(a.updatedAt&&a.updatedAt!==a.createdAt)meta+=` · Sửa lần cuối bởi ${esc(actorName(a.updatedBy))} lúc ${esc(fmtTs(a.updatedAt))}`;
+  else if(a.createdAt&&a.createdBy)meta+=` lúc ${esc(fmtTs(a.createdAt))}`;
+  if(!can&&!S.readOnly)meta+=` · <span class="locked">Chỉ người tạo hoặc chủ trang sửa được</span>`;
+  return `<article class="act"><div class="time">${time}</div><div class="card${conf?" conflict":""}" style="--tc:var(--t-${tk})">
+    <div class="card-top"><div style="min-width:0"><span class="type">${esc(TYPE_L[tk])}${showDate&&a.date?" · "+esc(fmtD(a.date)):""}</span><h3>${esc(a.title)}</h3>
+    ${a.place?`<div class="place">${IC.pin}<span>${esc(a.place)}</span></div>`:""}</div>${acts}</div>
+    <div class="people">${people}</div>
+    ${a.note?`<div class="note">${esc(a.note)}</div>`:""}${alert}
+    <div class="meta">${meta}</div></div></article>`;
+}
+function renderPeople(){
+  const conf=computeConflicts();const days=tripDays();
+  let h=`<div class="legend"><span><span class="free">Rảnh</span> = chưa có hoạt động nào trong ngày</span><span style="color:var(--danger);font-weight:600">Nền đỏ = trùng giờ</span></div>`;
+  h+=`<div class="grid-box"><table class="grid"><thead><tr><th class="who" scope="col">Thành viên</th>${days.map((d,i)=>`<th scope="col">Ngày ${i+1} · ${WDS[parseD(d).getDay()]} ${esc(fmtDS(d))}</th>`).join("")}</tr></thead><tbody>`;
+  MIDS.forEach(id=>{
+    h+=`<tr><th class="who" scope="row"><span style="display:inline-flex;gap:6px;align-items:center">${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}</span></th>`;
+    days.forEach(d=>{
+      const items=sortActs(actList().filter(a=>a.date===d&&validPeople(a.people).includes(id)));
+      h+=`<td>${items.length?items.map(a=>{const bad=(conf[a.id]||[]).some(c=>c.members.includes(id));return `<div class="gi${bad?" bad":""}" style="--tc:var(--t-${typeOf(a)})"><span class="t">${esc(a.start||"·")}</span><span>${esc(a.title)}${a.place?` <span style="color:var(--muted)">· ${esc(a.place)}</span>`:""}</span></div>`}).join(""):`<span class="free">Rảnh cả ngày</span>`}</td>`;
+    });
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table></div>`;
+}
+function fmtVal(f,v){
+  if(f==="people")return peopleText(v);
+  if(f==="type")return TYPE_L[v]||"Khác";
+  if(f==="tLock")return v?"Bật":"Tắt";
+  if(v===""||v==null)return"(trống)";
+  if(f==="date"||f==="tStart"||f==="tEnd")return fmtD(v);
+  return String(v);
+}
+function renderHistory(){
+  const list=S.history.slice(0,HIST_MAX);
+  if(!S.historyLoaded)return `<div class="sk"></div><div class="sk"></div>`;
+  if(!list.length)return `<div class="state"><h2>Chưa có thay đổi nào</h2><p>Mỗi lần ai đó thêm, sửa, xóa hay khôi phục hoạt động, sửa chuyến đi hoặc đổi tên thành viên, thay đổi sẽ hiện ở đây.</p></div>`;
+  const today=isoD(new Date());const y=new Date();y.setDate(y.getDate()-1);const yest=isoD(y);
+  const groups=[];let cur=null;
+  list.forEach(e=>{const d=isoD(new Date(e.at||0));if(!cur||cur.d!==d){cur={d,items:[]};groups.push(cur)}cur.items.push(e)});
+  let h=`<p class="hint" style="margin:0 0 12px">Hiện ${list.length} thay đổi gần nhất (tối đa ${HIST_MAX}), mới nhất ở trên.</p>`;
+  groups.forEach(g=>{
+    const lbl=g.d===today?"Hôm nay":g.d===yest?"Hôm qua":dayLabel(g.d)+"/"+g.d.slice(0,4);
+    h+=`<section class="hgroup"><h2>${esc(lbl)}</h2>`;
+    g.items.forEach(e=>{
+      const k=KIND_L[e.kind]?e.kind:"edit";const dt=new Date(e.at||0);
+      let target="";
+      if(e.kind==="member")target=`Thành viên số ${esc(MIDS.indexOf(e.targetId)+1||"?")}`;
+      else if(e.kind==="trip")target=e.created?"Tạo chuyến đi":"";
+      else if(e.kind==="clear")target=esc(e.title||"");
+      else target=`“${esc(e.title||"")}”`;
+      h+=`<div class="hitem"><div class="hline"><span class="ht">${pad(dt.getHours())}:${pad(dt.getMinutes())}</span><strong>${esc(actorName(e.by))}</strong><span class="kind ${esc(k)}">${esc(KIND_L[k])}</span><span>${target}</span></div>`;
+      if(Array.isArray(e.changes)&&e.changes.length){h+=`<ul>${e.changes.map(c=>`<li><b>${esc(FL[c.f]||c.f)}:</b> <span class="b">${esc(fmtVal(c.f,c.b))}</span><span class="arrow">→</span><span>${esc(fmtVal(c.f,c.a))}</span></li>`).join("")}</ul>`}
+      if(e.kind==="delete"&&e.snapshot){
+        const s=e.snapshot;
+        h+=`<ul><li>${esc(fmtD(s.date))}${s.start?" · "+esc(timeText(s)):""}${s.place?" · "+esc(s.place):""} · ${esc(peopleText(s.people))}</li></ul>`;
+        if(S.acts[e.actId])h+=`<div class="meta">Hoạt động này đã được khôi phục.</div>`;
+        else if(!S.readOnly)h+=`<div style="margin-top:8px"><button class="btn" data-act="restore" data-id="${esc(e.id)}">${IC.undo}Khôi phục</button></div>`;
+      }
+      h+=`</div>`;
+    });
+    h+=`</section>`;
+  });
+  return h;
+}
+
+/* ---------- toasts ---------- */
+function toast(msg,err){const t=document.createElement("div");t.className="toast"+(err?" err":"");t.textContent=msg;$("toasts").appendChild(t);setTimeout(()=>t.remove(),err?6000:3200)}
+
+/* ---------- db writes ---------- */
+function errMsg(e){
+  switch(e&&e.code){
+    case"permission-denied":return"Không lưu được: bạn đang dùng link xem, không có quyền sửa.";
+    case"invalid-argument":return"Không lưu được: dữ liệu không hợp lệ.";
+    case"resource-exhausted":return"Không lưu được: vượt hạn mức miễn phí của Firebase hôm nay, hoặc thao tác quá nhanh. Thử lại sau.";
+    case"unauthenticated":return"Không lưu được: chưa kết nối xong. Tải lại trang rồi thử lại.";
+    default:return"Không lưu được do mất kết nối. Kiểm tra mạng rồi thử lại.";
+  }
+}
+async function run(fn){
+  try{await fn();return true}
+  catch(e){
+    if(e&&e.code==="unavailable"){await new Promise(r=>setTimeout(r,400+Math.random()*600));try{await fn();return true}catch(e2){e=e2}}
+    if(e&&e.code==="permission-denied"){S.readOnly=true;render()}
+    toast(errMsg(e),true);return false;
+  }
+}
+async function addHistory(entry){
+  const ok=await run(()=>S.db.collection("history").add(Object.assign({at:Date.now(),by:S.uid||null},entry)));
+  if(ok)pruneHistory();
+  return ok;
+}
+let pruning=false;
+async function pruneHistory(){
+  if(pruning)return;pruning=true;
+  try{const extra=S.history.slice(HIST_MAX,HIST_MAX+40);for(const e of extra){try{await S.db.doc("history/"+e.id).delete()}catch(_){break}}}
+  finally{pruning=false}
+}
+
+/* ---------- modal ---------- */
+let modalClose=null;
+function openModal(html,onClose){
+  const root=$("modal-root");
+  root.innerHTML=`<div class="modal-bg" data-act="modal-bg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  modalClose=onClose||null;
+  const f=root.querySelector("[autofocus],input,select,textarea,button");if(f&&window.innerWidth>640)f.focus();
+  document.body.style.overflow="hidden";
+}
+function closeModal(){$("modal-root").innerHTML="";document.body.style.overflow="";if(modalClose)modalClose();modalClose=null}
+
+/* ---------- activity form ---------- */
+function actForm(a,defDate){
+  const days=tripDays();const date=a?a.date:(defDate||days[0]||"");
+  const opts=days.map((d,i)=>`<option value="${d}"${d===date?" selected":""}>Ngày ${i+1} · ${esc(dayLabel(d))}</option>`).join("")+(date&&!days.includes(date)?`<option value="${esc(date)}" selected>${esc(fmtD(date))} (ngoài lịch trình)</option>`:"");
+  const tk=a?typeOf(a):"see";
+  const sel=a?validPeople(a.people):(S.filter!=="all"?[S.filter]:MIDS.slice());
+  return `<h2>${a?"Sửa hoạt động":"Thêm hoạt động"}</h2>
+  <form id="act-form" novalidate data-id="${a?esc(a.id):""}"><div class="fields">
+    <label class="f">Tên hoạt động <span class="req" aria-hidden="true">*</span><input class="in" id="f-title" maxlength="120" value="${a?esc(a.title):""}" placeholder="Ví dụ: Ăn trưa bánh căn" autofocus></label>
+    <div class="ferr" id="e-title" hidden></div>
+    <label class="f">Ngày<select class="in" id="f-date">${opts}</select></label>
+    <div class="row2"><label class="f">Giờ bắt đầu<input class="in" type="time" id="f-start" value="${a?esc(a.start||""):""}"></label>
+    <label class="f">Giờ kết thúc<input class="in" type="time" id="f-end" value="${a?esc(a.end||""):""}"></label></div>
+    <div class="ferr" id="e-time" hidden></div>
+    <label class="f">Địa điểm<input class="in" id="f-place" maxlength="160" value="${a?esc(a.place||""):""}" placeholder="Ví dụ: Chợ Đà Lạt"></label>
+    <div class="f" style="display:flex;flex-direction:column;gap:6px"><span class="f" style="display:block">Loại</span><div class="typepick" role="radiogroup" aria-label="Loại">
+      ${TYPES.map(t=>`<label style="--tc:var(--t-${t.k})"><input type="radio" name="f-type" value="${t.k}"${t.k===tk?" checked":""}><span>${esc(t.l)}</span></label>`).join("")}
+    </div></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><span class="f" style="display:block">Người tham gia <span class="req" aria-hidden="true">*</span></span>
+      <div class="peoplepick" id="pp"><button type="button" class="chip plain" data-act="pick-all" aria-pressed="${sel.length===MIDS.length}">Cả đoàn</button>
+      ${MIDS.map(id=>`<label><input type="checkbox" name="f-people" value="${id}"${sel.includes(id)?" checked":""}><span class="pc">${av(id).replace('class="av"','class="av" style="margin:0;border:0;width:22px;height:22px;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}</span></label>`).join("")}</div>
+      <div class="ferr" id="e-people" hidden></div></div>
+    <label class="f">Ghi chú<textarea class="in" id="f-note" maxlength="1000" placeholder="Giờ tập trung, mang theo gì, ai đặt chỗ…">${a?esc(a.note||""):""}</textarea></label>
+  </div>
+  <div class="mfoot">${a?`<button type="button" class="btn danger" data-act="del" data-id="${esc(a.id)}">${IC.trash}Xóa</button><span class="sp"></span>`:""}<button type="button" class="btn" data-act="close">Hủy</button><button type="submit" class="btn primary" id="f-save">${a?"Lưu thay đổi":"Thêm hoạt động"}</button></div></form>`;
+}
+function syncAllBtn(){const b=document.querySelector('[data-act="pick-all"]');if(!b)return;const n=document.querySelectorAll('input[name="f-people"]:checked').length;b.setAttribute("aria-pressed",String(n===MIDS.length))}
+function showErr(id,msg,inputs){const e=$(id);if(!e)return;e.hidden=!msg;e.textContent=msg||"";(inputs||[]).forEach(i=>{const el=$(i);if(el)el.setAttribute("aria-invalid",msg?"true":"false")})}
+async function saveAct(form){
+  const v={title:$("f-title").value.trim(),date:$("f-date").value,start:$("f-start").value,end:$("f-end").value,place:$("f-place").value.trim(),
+    type:(form.querySelector('input[name="f-type"]:checked')||{}).value||"other",
+    people:[...form.querySelectorAll('input[name="f-people"]:checked')].map(i=>i.value),note:$("f-note").value.trim()};
+  let bad=false;
+  showErr("e-title",v.title?"":"Hãy nhập tên hoạt động.",["f-title"]);if(!v.title)bad=true;
+  let te="";if(v.end&&!v.start)te="Hãy nhập giờ bắt đầu trước khi nhập giờ kết thúc.";else if(v.start&&v.end&&toMin(v.end)<=toMin(v.start))te="Giờ kết thúc phải sau giờ bắt đầu.";
+  showErr("e-time",te,["f-start","f-end"]);if(te)bad=true;
+  showErr("e-people",v.people.length?"":"Hãy chọn ít nhất một người tham gia.");if(!v.people.length)bad=true;
+  if(!isDate(v.date)){toast("Hãy chọn ngày cho hoạt động.",true);bad=true}
+  if(bad){const f=form.querySelector('[aria-invalid="true"]');if(f)f.focus();return}
+  v.people=validPeople(v.people);
+  const id=form.dataset.id;const now=Date.now();const btn=$("f-save");btn.disabled=true;
+  try{
+    if(id){
+      const cur=S.acts[id];if(!cur){toast("Hoạt động này vừa bị người khác xóa.",true);closeModal();return}
+      const changes=[];
+      ACT_FIELDS.forEach(f=>{const b=f==="people"?validPeople(cur.people):(cur[f]??""),a=v[f];const same=f==="people"?b.join()===a.join():String(b)===String(a);if(!same)changes.push({f,b,a})});
+      if(!changes.length){closeModal();toast("Không có gì thay đổi.");return}
+      const data=Object.assign(cleanAct(cur),v,{sample:false,updatedBy:S.uid||null,updatedAt:now});
+      if(!await run(()=>S.db.doc("activities/"+id).set(data)))return;
+      closeModal();toast("Đã lưu thay đổi.");
+      await addHistory({kind:"edit",actId:id,title:v.title,changes});
+    }else{
+      const ref=S.db.collection("activities").doc();
+      const data=Object.assign({},v,{createdBy:S.uid||null,createdAt:now,updatedBy:S.uid||null,updatedAt:now,sample:false});
+      if(!await run(()=>ref.set(data)))return;
+      closeModal();toast("Đã thêm hoạt động.");
+      await addHistory({kind:"add",actId:ref.id,title:v.title});
+    }
+  }finally{if(document.body.contains(btn))btn.disabled=false}
+}
+
+/* ---------- delete / restore ---------- */
+function openDelete(id){
+  const a=S.acts[id];if(!a)return;
+  openModal(`<h2>Xóa hoạt động?</h2><p>“${esc(a.title)}” · ${esc(fmtD(a.date))}${a.start?" · "+esc(timeText(a)):""}</p>
+  <p class="hint">Bản sao được giữ trong tab Lịch sử để khôi phục nếu cần.</p>
+  <div class="mfoot"><button class="btn" data-act="close">Hủy</button><button class="btn danger" data-act="del-confirm" data-id="${esc(id)}" data-step="1">${IC.trash}Xóa</button></div>`);
+}
+async function doDelete(id,btn){
+  const a=S.acts[id];if(!a){closeModal();return}
+  const snap=cleanAct(a);btn.disabled=true;
+  if(!await run(()=>S.db.doc("activities/"+id).delete())){btn.disabled=false;return}
+  closeModal();toast("Đã xóa “"+a.title+"”. Có thể khôi phục trong tab Lịch sử.");
+  await addHistory({kind:"delete",actId:id,title:a.title,snapshot:snap});
+}
+async function doRestore(hid,btn){
+  const e=S.history.find(x=>x.id===hid);if(!e||!e.snapshot)return;
+  if(S.acts[e.actId]){toast("Hoạt động này đã có lại trong lịch.");return}
+  btn.disabled=true;
+  const data=Object.assign(cleanAct(e.snapshot),{updatedBy:S.uid||null,updatedAt:Date.now()});
+  if(!await run(()=>S.db.doc("activities/"+e.actId).set(data))){btn.disabled=false;return}
+  toast("Đã khôi phục “"+e.title+"”.");
+  await addHistory({kind:"restore",actId:e.actId,title:e.title});
+}
+
+/* ---------- trip & members ---------- */
+function tripForm(){
+  const t=S.trip||{};
+  return `<h2>${S.trip?"Chuyến đi & thành viên":"Tạo chuyến đi"}</h2><form id="trip-form" novalidate><div class="fields">
+  <label class="f">Tên chuyến đi <span class="req" aria-hidden="true">*</span><input class="in" id="t-name" maxlength="100" value="${esc(t.name||"")}" placeholder="Ví dụ: Đà Lạt cuối năm"></label>
+  <label class="f">Điểm đến<input class="in" id="t-dest" maxlength="100" value="${esc(t.destination||"")}" placeholder="Ví dụ: Đà Lạt, Lâm Đồng"></label>
+  <div class="row2"><label class="f">Ngày đi<input class="in" type="date" id="t-start" value="${esc(t.startDate||"")}"></label><label class="f">Ngày về<input class="in" type="date" id="t-end" value="${esc(t.endDate||"")}"></label></div>
+  <div class="ferr" id="e-trip" hidden></div>
+  ${S.isOwner||!S.trip?`<label class="switch"><input type="checkbox" id="t-lock"${t.lockToCreator?" checked":""}><span>Chỉ người tạo hoạt động hoặc chủ trang mới được sửa, xóa hoạt động đó<br><span class="hint">Đây chỉ là chặn trên giao diện. Ai có link sửa vẫn có quyền ghi vào kho dữ liệu.</span></span></label>`:""}
+  <hr class="sep"><span class="f" style="display:block;font-size:13px;font-weight:600;color:var(--muted)">Tên 8 thành viên</span>
+  <div class="mem-grid">${MIDS.map((id,i)=>`<label class="mem-in">${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+(i+1)+')"')}<input class="in" id="mem-${id}" maxlength="40" aria-label="Tên thành viên ${i+1}" value="${esc(S.members[id]&&S.members[id].name||"")}" placeholder="Thành viên ${i+1}"></label>`).join("")}</div>
+  </div><div class="mfoot"><button type="button" class="btn" data-act="close">Hủy</button><button type="submit" class="btn primary" id="t-save">Lưu</button></div></form>`;
+}
+async function saveTrip(){
+  const old=S.trip||{};
+  const v={name:$("t-name").value.trim(),destination:$("t-dest").value.trim(),startDate:$("t-start").value,endDate:$("t-end").value,
+    lockToCreator:$("t-lock")?$("t-lock").checked:!!old.lockToCreator};
+  let err="";
+  if(!v.name)err="Hãy nhập tên chuyến đi.";
+  else if(!isDate(v.startDate)||!isDate(v.endDate))err="Hãy chọn cả ngày đi và ngày về.";
+  else if(v.endDate<v.startDate)err="Ngày về phải bằng hoặc sau ngày đi.";
+  else if((parseD(v.endDate)-parseD(v.startDate))/864e5>60)err="Chuyến đi tối đa 60 ngày.";
+  showErr("e-trip",err);if(err)return;
+  const map=[["tName","name"],["tDest","destination"],["tStart","startDate"],["tEnd","endDate"],["tLock","lockToCreator"]];
+  const changes=[];
+  map.forEach(([f,k])=>{const b=k==="lockToCreator"?!!old[k]:(old[k]||"");if(b!==v[k])changes.push({f,b,a:v[k]})});
+  const memChanges=[];
+  MIDS.forEach(id=>{const b=(S.members[id]&&S.members[id].name)||"";const a=$("mem-"+id).value.trim();if(a!==b)memChanges.push({id,b,a})});
+  if(!changes.length&&!memChanges.length){closeModal();toast("Không có gì thay đổi.");return}
+  const btn=$("t-save");btn.disabled=true;
+  try{
+    if(changes.length){
+      const created=!S.trip;
+      if(!await run(()=>S.db.doc("trip/info").set(Object.assign({},v,{ownerUid:old.ownerUid||S.uid||null,sample:false,updatedBy:S.uid||null,updatedAt:Date.now()}))))return;
+      await addHistory({kind:"trip",created,changes});
+    }
+    for(const m of memChanges){
+      if(!await run(()=>S.db.doc("members/"+m.id).set({name:m.a,order:MIDS.indexOf(m.id)+1,sample:false})))return;
+      await addHistory({kind:"member",targetId:m.id,changes:[{f:"name",b:m.b||("Thành viên "+(MIDS.indexOf(m.id)+1)),a:m.a||("Thành viên "+(MIDS.indexOf(m.id)+1))}]});
+    }
+    closeModal();toast("Đã lưu.");
+  }finally{if(document.body.contains(btn))btn.disabled=false}
+}
+
+/* ---------- clear sample ---------- */
+function openClear(){
+  const n=actList().filter(a=>a.sample).length;
+  openModal(`<h2>Xóa dữ liệu mẫu?</h2><p>Sẽ xóa ${n} hoạt động mẫu${S.trip&&S.trip.sample?", thông tin chuyến mẫu":""} và tên thành viên mẫu chưa được sửa. Hoạt động do cả đoàn tự thêm vẫn giữ nguyên.</p>
+  <div class="mfoot"><button class="btn" data-act="close">Hủy</button><button class="btn danger" data-act="clear-confirm" data-step="1">${IC.trash}Xóa dữ liệu mẫu</button></div>`);
+}
+async function doClear(btn){
+  btn.disabled=true;let n=0;
+  for(const a of actList().filter(a=>a.sample)){if(!await run(()=>S.db.doc("activities/"+a.id).delete())){btn.disabled=false;return}n++}
+  for(const id of MIDS){if(S.members[id]&&S.members[id].sample){if(!await run(()=>S.db.doc("members/"+id).delete())){btn.disabled=false;return}}}
+  if(S.trip&&S.trip.sample){if(!await run(()=>S.db.doc("trip/info").delete())){btn.disabled=false;return}}
+  closeModal();toast("Đã xóa dữ liệu mẫu.");
+  await addHistory({kind:"clear",title:`Đã xóa ${n} hoạt động mẫu`});
+}
+
+/* ---------- copy ---------- */
+function buildText(who){
+  const t=S.trip;if(!t)return"";
+  const L=[];L.push(`📅 ${t.name}${t.destination?" – "+t.destination:""}`);L.push(`${fmtD(t.startDate)} → ${fmtD(t.endDate)}`);
+  if(who!=="all")L.push(`Lịch của ${mName(who)}`);
+  const conf=computeConflicts();
+  tripDays().forEach((d,i)=>{
+    L.push("");L.push(`▶ Ngày ${i+1} · ${dayLabel(d)}`);
+    const items=sortActs(actList().filter(a=>a.date===d&&(who==="all"||validPeople(a.people).includes(who))));
+    if(!items.length)L.push(who==="all"?"• Chưa có hoạt động":"• Rảnh cả ngày");
+    items.forEach(a=>{
+      let s=`• ${isTime(a.start)?timeText(a):"Cả ngày"} ${a.title}`;
+      if(a.place)s+=` @ ${a.place}`;
+      if(who==="all"&&!isAll(a.people))s+=` (${peopleText(a.people)})`;
+      if(conf[a.id]&&(who==="all"||conf[a.id].some(c=>c.members.includes(who))))s+=" ⚠ trùng giờ";
+      L.push(s);if(a.note)L.push(`   ${a.note.replace(/\n/g,"\n   ")}`);
+    });
+  });
+  return L.join("\n");
+}
+function openCopy(){
+  openModal(`<h2>Sao chép lịch</h2><div class="fields"><label class="f">Lịch của<select class="in" id="copy-who"><option value="all">Cả đoàn</option>${MIDS.map(id=>`<option value="${id}">${esc(mName(id))}</option>`).join("")}</select></label>
+  <label class="f">Xem trước<textarea class="in" id="copy-text" readonly>${esc(buildText("all"))}</textarea></label></div>
+  <div class="mfoot"><button class="btn" data-act="close">Đóng</button><button class="btn primary" data-act="do-copy">${IC.copy}Sao chép</button></div>`);
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-act]");if(!el)return;
+  const act=el.dataset.act;
+  if(act==="modal-bg"){if(e.target===el)closeModal();return}
+  switch(act){
+    case"close":closeModal();break;
+    case"filter":S.filter=el.dataset.id;render();break;
+    case"add":if(!S.readOnly&&S.trip)openModal(actForm(null,el.dataset.date));break;
+    case"edit":{const a=S.acts[el.dataset.id];if(a&&canModify(a))openModal(actForm(a));break}
+    case"del":{const a=S.acts[el.dataset.id];if(a&&canModify(a))openDelete(a.id);break}
+    case"del-confirm":if(el.dataset.step==="1"){el.dataset.step="2";el.classList.add("armed");el.innerHTML=IC.trash+"Bấm lần nữa để xóa hẳn"}else doDelete(el.dataset.id,el);break;
+    case"clear-sample":openClear();break;
+    case"clear-confirm":if(el.dataset.step==="1"){el.dataset.step="2";el.classList.add("armed");el.innerHTML=IC.trash+"Bấm lần nữa để xóa hẳn"}else doClear(el);break;
+    case"restore":doRestore(el.dataset.id,el);break;
+    case"trip":if(!S.readOnly)openModal(tripForm());break;
+    case"copy":openCopy();break;
+    case"whoami":openWho();break;
+    case"pick-me":pickMe(el.dataset.id,el);break;
+    case"share":openShare();break;
+    case"copy-link":{const inp=$(el.dataset.for);const txt=inp.value;const fb=()=>{inp.focus();inp.select();toast("Đã chọn sẵn link, hãy nhấn giữ và chọn Sao chép.")};try{navigator.clipboard.writeText(txt).then(()=>toast("Đã sao chép link."),fb)}catch(_){fb()}break}
+    case"pick-all":{const boxes=[...document.querySelectorAll('input[name="f-people"]')];const all=boxes.every(b=>b.checked);boxes.forEach(b=>b.checked=!all);syncAllBtn();break}
+    case"do-copy":{
+      const ta=$("copy-text");const txt=ta.value;
+      const fallback=()=>{ta.focus();ta.select();toast("Không sao chép tự động được. Văn bản đã được chọn sẵn, hãy nhấn giữ và chọn Sao chép.")};
+      try{navigator.clipboard.writeText(txt).then(()=>toast("Đã sao chép. Dán vào Zalo hoặc Messenger nhé."),fallback)}catch(_){fallback()}
+      break}
+  }
+});
+document.addEventListener("change",e=>{
+  if(e.target.name==="f-people")syncAllBtn();
+  if(e.target.id==="copy-who")$("copy-text").value=buildText(e.target.value);
+});
+document.addEventListener("submit",e=>{
+  e.preventDefault();
+  if(e.target.id==="act-form")saveAct(e.target);
+  if(e.target.id==="trip-form")saveTrip();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("modal-root").firstChild)closeModal()});
+function route(){const h=(location.hash||"").slice(1);S.tab=["ngay","nguoi","lich-su"].includes(h)?h:"ngay";render()}
+window.addEventListener("hashchange",route);
+
+/* ---------- who am I / share ---------- */
+function openWho(){
+  const cur=S.people[S.uid]&&S.people[S.uid].memberId;
+  openModal(`<h2>Bạn là ai trong đoàn?</h2><p class="hint" style="margin-top:-6px">Chọn một lần trên máy này. Tên bạn sẽ hiện ở "Thêm bởi…" và trong tab Lịch sử.</p>
+  <div class="who-grid">${MIDS.map(id=>`<button class="chip" data-act="pick-me" data-id="${id}" aria-pressed="${cur===id}">${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}</button>`).join("")}</div>
+  <div class="mfoot"><button class="btn" data-act="close">Để sau</button></div>`);
+}
+async function pickMe(mid,btn){
+  if(!S.uid)return;btn.disabled=true;
+  if(await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}))){closeModal();toast("Chào "+mName(mid)+"!")}
+  else btn.disabled=false;
+}
+function baseUrl(){return location.origin+location.pathname}
+function openShare(){
+  const view=baseUrl();
+  const edit=S.editCode&&!S.readOnly?view+"?ma="+encodeURIComponent(S.editCode):"";
+  openModal(`<h2>Chia sẻ cho cả đoàn</h2><div class="fields">
+  <label class="f">Link xem (ai mở cũng chỉ xem được)<span class="linkbox"><input class="in" id="lk-view" readonly value="${esc(view)}"><button class="btn" data-act="copy-link" data-for="lk-view">${IC.copy}</button></span></label>
+  ${edit?`<label class="f">Link sửa (ai có link này đều thêm, sửa, xóa được)<span class="linkbox"><input class="in" id="lk-edit" readonly value="${esc(edit)}"><button class="btn" data-act="copy-link" data-for="lk-edit">${IC.copy}</button></span></label>
+  <p class="hint" style="margin:0">Chỉ gửi link sửa vào nhóm chat riêng của 8 người. Người có link sửa có thể chuyển tiếp cho người khác.</p>`:`<p class="hint" style="margin:0">Muốn sửa lịch, hãy xin trưởng đoàn link sửa.</p>`}
+  </div><div class="mfoot"><button class="btn" data-act="close">Đóng</button></div>`);
+}
+
+/* ---------- sample seed (chạy một lần khi kho trống) ---------- */
+const SAMPLE={
+  trip:{name:"Đà Lạt cuối năm",destination:"Đà Lạt, Lâm Đồng",startDate:"2026-12-18",endDate:"2026-12-20",lockToCreator:false,sample:true},
+  members:["An","Bình","Chi","Dũng","Hà","Khoa","Linh","Minh"],
+  acts:[
+    ["Bay Hà Nội → Liên Khương","2026-12-18","06:30","08:15","Sân bay Nội Bài, nhà ga T1","move","all","Có mặt lúc 05:00. Mỗi người 7 kg xách tay."],
+    ["Xe đón về trung tâm","2026-12-18","09:00","09:45","Sân bay Liên Khương","move","all",""],
+    ["Homestay Dốc Mây","2026-12-18","","","Phường 3, Đà Lạt","stay","all","3 phòng, nhận phòng từ 14:00, trả phòng 12:00 ngày 20/12."],
+    ["Ăn trưa bánh căn","2026-12-18","11:30","13:00","Bánh căn Nhà Chung","food","all",""],
+    ["Đồi chè Cầu Đất","2026-12-18","15:00","17:30","Xã Trạm Hành","see",["m1","m2","m3","m4","m5"],"Thuê 3 xe máy."],
+    ["Cà phê và đi chợ Đà Lạt","2026-12-18","15:30","17:00","Chợ Đà Lạt","shop",["m6","m7","m8"],""],
+    ["Lẩu gà lá é","2026-12-18","18:30","20:00","Đường Phan Bội Châu","food","all","Đã đặt bàn 8 người."],
+    ["Leo núi Langbiang","2026-12-19","08:00","11:30","Khu du lịch Langbiang, Lạc Dương","see",["m1","m2","m4","m6","m7"],"Mang giày thể thao, áo gió."],
+    ["Vườn dâu và Đường hầm đất sét","2026-12-19","10:00","12:00","Hồ Tuyền Lâm","see",["m3","m5","m8"],""],
+    ["Ăn trưa nem nướng","2026-12-19","11:00","12:30","Nem nướng Bà Hùng","food",["m2","m3","m5","m8"],"Ví dụ trùng giờ: Bình còn đang leo núi, Chi, Hà, Minh còn ở vườn dâu."],
+    ["Chợ đêm Đà Lạt","2026-12-19","19:00","21:30","Khu Hòa Bình","shop","all",""],
+    ["Ăn sáng bánh mì xíu mại","2026-12-20","07:00","08:00","Đường Hoàng Diệu","food","all",""],
+    ["Hồ Tuyền Lâm, đạp vịt","2026-12-20","08:30","10:30","Hồ Tuyền Lâm","see","all",""],
+    ["Bay về Hà Nội","2026-12-20","13:30","15:15","Sân bay Liên Khương","move","all","Xe ra sân bay lúc 11:30."]
+  ]
+};
+async function seedIfEmpty(){
+  try{
+    const st=await S.db.doc("meta/state").get();
+    if(st.exists)return;
+    const b=S.db.batch();const now=Date.now();
+    b.set(S.db.doc("meta/state"),{seeded:true,at:now});
+    b.set(S.db.doc("trip/info"),Object.assign({},SAMPLE.trip,{ownerUid:S.uid,updatedBy:null,updatedAt:now}));
+    SAMPLE.members.forEach((n,i)=>b.set(S.db.doc("members/m"+(i+1)),{name:n,order:i+1,sample:true}));
+    SAMPLE.acts.forEach((a,i)=>b.set(S.db.doc("activities/mau"+pad(i+1)),{title:a[0],date:a[1],start:a[2],end:a[3],place:a[4],type:a[5],people:a[6]==="all"?MIDS.slice():a[6],note:a[7],createdBy:null,createdAt:now,updatedBy:null,updatedAt:now,sample:true}));
+    await b.commit();
+  }catch(e){if(!(e&&e.code==="permission-denied"))console.warn("seed",e)}
+}
+
+/* ---------- boot ---------- */
+function subErr(e){
+  S.subError=e&&e.code==="permission-denied"?"Không có quyền đọc dữ liệu. Báo trưởng đoàn kiểm tra luật bảo mật Firestore.":"Mất kết nối với kho dữ liệu chung. Tải lại trang để kết nối lại.";
+  render();
+}
+function lsGet(k){try{return localStorage.getItem(k)||""}catch(_){return""}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(_){}}
+async function boot(){
+  route();
+  const cfg=window.FIREBASE_CONFIG||{};
+  if(!window.firebase||!cfg.apiKey||!cfg.projectId){S.notConfigured=!!window.firebase;S.dbMissing=!window.firebase;render();return}
+  let db;
+  try{
+    firebase.initializeApp(cfg);
+    db=firebase.firestore();
+    try{await db.enablePersistence({synchronizeTabs:true})}catch(_){}
+    /* Đợi Firebase khôi phục phiên cũ, để mỗi máy giữ nguyên một id */
+    let u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)})});
+    if(!u)u=(await firebase.auth().signInAnonymously()).user;
+    S.uid=u.uid;
+  }catch(e){console.error(e);S.dbMissing=true;render();return}
+  S.db=db;
+  /* Mã sửa: lấy từ ?ma=… trong link (rồi xóa khỏi thanh địa chỉ), hoặc mã đã lưu trên máy */
+  const params=new URLSearchParams(location.search);
+  const fromUrl=params.get("ma");
+  if(fromUrl){lsSet("lt-ma",fromUrl);params.delete("ma");const q=params.toString();history.replaceState(null,"",location.pathname+(q?"?"+q:"")+location.hash)}
+  S.editCode=fromUrl||lsGet("lt-ma");
+  S.readOnly=true;
+  try{
+    const ed=await db.doc("editors/"+S.uid).get();
+    if(ed.exists)S.readOnly=false;
+    else if(S.editCode){await db.doc("editors/"+S.uid).set({code:S.editCode,at:Date.now()});S.readOnly=false}
+  }catch(e){
+    if(fromUrl&&e&&e.code==="permission-denied")toast("Mã trong link sửa không đúng. Bạn đang ở chế độ chỉ xem.",true);
+  }
+  if(!S.readOnly)await seedIfEmpty();
+  const timer=setTimeout(()=>{if(!S.confirmed){S.stale=true;render()}},10000);
+  const confirm=m=>{if(!m.fromCache&&!S.confirmed){S.confirmed=true;S.stale=false;clearTimeout(timer)}};
+  let askedWho=false;
+  db.collection("people").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.people=m;S.peopleLoaded=true;render();
+    if(!askedWho&&!S.readOnly&&!q.metadata.fromCache&&!m[S.uid]){askedWho=true;setTimeout(()=>{if(!$("modal-root").firstChild&&!S.people[S.uid])openWho()},800)}},subErr);
+  db.doc("trip/info").onSnapshot(s=>{S.trip=s.exists?s.data():null;S.isOwner=!!(S.trip&&S.trip.ownerUid&&S.trip.ownerUid===S.uid);S.tripLoaded=true;confirm(s.metadata);render()},subErr);
+  db.collection("members").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.members=m;S.membersLoaded=true;confirm(q.metadata);render()},subErr);
+  db.collection("activities").onSnapshot(q=>{const m={};q.docs.forEach(d=>{const x=d.data();if(x&&typeof x.title==="string")m[d.id]=Object.assign({},x,{id:d.id})});S.acts=m;S.actsLoaded=true;confirm(q.metadata);render()},subErr);
+  db.collection("history").orderBy("at","desc").limit(HIST_MAX+60).onSnapshot(q=>{S.history=q.docs.map(d=>Object.assign({},d.data(),{id:d.id}));S.historyLoaded=true;render()},subErr);
+}
+render();
+boot();
+})();
+</script>
+
+</body>
+</html>
