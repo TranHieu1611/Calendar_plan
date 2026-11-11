@@ -79,21 +79,71 @@ main{padding-block:16px 120px}
 .chip.plain{padding-left:12px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
-.day{margin-bottom:22px}
-.day-head{display:flex;align-items:baseline;gap:10px;justify-content:space-between;padding:6px 2px 8px;border-bottom:1px solid var(--line);margin-bottom:10px}
-.day-head h2{font-family:var(--f-display);font-size:17px;font-weight:600;margin:0}
-.day-head h2 .n{color:var(--accent);margin-right:6px}
-.day-head .cnt{color:var(--muted);font-size:13px}
-.empty-day{color:var(--muted);font-size:14px;padding:6px 2px 4px}
+/* Day navigator (in sticky header) */
+.daynav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px}
+.daynav button{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:72px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;font-variant-numeric:tabular-nums;line-height:1.2}
+.daynav button:hover{border-color:var(--accent)}
+.daynav small{font-size:11px;color:var(--muted);font-weight:500}
+.daynav b{font-family:var(--f-display);font-size:14px;font-weight:600}
+.daynav button.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.daynav button.today small:first-child{color:var(--accent);font-weight:700}
 
-.act{display:grid;grid-template-columns:64px 1fr;gap:10px;margin-bottom:10px}
-.act .time{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;padding-top:12px;text-align:right;line-height:1.25}
-.act .time small{display:block;color:var(--muted);font-weight:500}
-.card{min-width:0;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--tc,var(--line));border-radius:var(--r);padding:10px 12px;box-shadow:var(--shadow)}
-.card.conflict{border-color:var(--danger);border-left-color:var(--danger);background:linear-gradient(var(--danger-soft),var(--danger-soft)) top/100% 0 no-repeat,var(--surface)}
-.card-top{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
-.card h3{margin:0;font-size:15.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
-.type{display:inline-block;font-size:12px;font-weight:600;color:var(--tc);letter-spacing:.02em;margin-bottom:2px}
+/* Day section */
+.day{margin-bottom:30px;scroll-margin-top:calc(var(--hh,170px) + 10px)}
+.day-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.day-num{flex:none;width:54px;height:54px;border-radius:12px;background:var(--ink);color:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.day-num small{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.8;font-weight:600}
+.day-num b{font-family:var(--f-display);font-size:22px;font-weight:600}
+.day.today .day-num{background:var(--accent);color:var(--accent-ink)}
+.day-title{min-width:0;flex:1}
+.day-title h2{font-family:var(--f-display);font-size:19px;font-weight:600;margin:0;line-height:1.25}
+.day-title .sub{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.pill-today{font-size:11px;font-weight:700;background:var(--accent);color:var(--accent-ink);padding:1px 8px;border-radius:999px;vertical-align:3px;margin-left:6px}
+.empty-day{color:var(--muted);font-size:14px;padding:4px 0 8px}
+
+/* Timeline */
+.tl{--tcol:60px;--dcol:30px;position:relative;display:flex;flex-direction:column;gap:10px}
+.tl::before{content:"";position:absolute;left:calc(var(--tcol) + var(--dcol) / 2 - 1px);top:8px;bottom:8px;width:2px;background:var(--line);border-radius:2px}
+.tl-row{display:grid;grid-template-columns:var(--tcol) var(--dcol) minmax(0,1fr);align-items:start}
+.tl-time{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;padding-top:10px;line-height:1.2}
+.tl-time small{display:block;font-weight:500;font-size:12.5px;color:var(--muted)}
+.tl-time .dur{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:3px}
+.tl-time.allday{font-size:12px;color:var(--muted);font-weight:600}
+.tl-dot{justify-self:center;margin-top:13px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--tc);position:relative;z-index:1}
+.tl-dot.sq{border-radius:4px}
+.tl-row.conflict .tl-dot{border-color:var(--danger);background:var(--danger)}
+.tl-row.past .card,.tl-row.past .tl-time{opacity:.62}
+.tl-gap{align-items:center}
+.tl-gap .gl{grid-column:3;font-size:13px;color:var(--muted);padding-left:2px}
+.slot{grid-column:3;display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1.5px dashed var(--line);background:transparent;border-radius:10px;padding:8px 12px;font-size:13.5px;color:var(--muted);cursor:pointer;font-variant-numeric:tabular-nums}
+.slot:hover,.slot:focus-visible{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.slot .plus{font-weight:700;font-size:16px;line-height:1}
+.tl-now{align-items:center;color:var(--danger);font-weight:700;font-size:12px}
+.tl-now .t{text-align:right;font-variant-numeric:tabular-nums}
+.tl-now .d{justify-self:center;width:12px;height:12px;border-radius:50%;background:var(--danger);position:relative;z-index:1}
+.tl-now .l{height:2px;background:var(--danger);border-radius:2px}
+
+/* Activity card */
+.card{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.card.conflict{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
+.card-main{padding:10px 12px 11px}
+.card-main.editable{cursor:pointer}
+.card-main.editable:hover h3{color:var(--accent)}
+.card-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card h3{margin:2px 0 0;font-size:16px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.type{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--tc);text-transform:uppercase;letter-spacing:.05em}
+.type::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--tc)}
+.fresh{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--warn-soft);color:var(--warn)}
+.card-foot{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;border-top:1px solid var(--line);background:var(--surface-2);padding:6px 8px 6px 12px}
+.card-foot .who{font-size:12px;color:var(--muted);min-width:0;flex:1 1 170px}
+.card-foot .who b{color:var(--ink);font-weight:600}
+.card-btns{display:flex;gap:6px;flex:none}
+.btn.sm{min-height:32px;padding:4px 11px;font-size:13px}
+.btn.sm svg{width:14px;height:14px}
+.btn.edit{border-color:var(--accent);color:var(--accent)}
+.btn.edit:hover{background:var(--accent-soft)}
+.btn.del{color:var(--danger)}
+.btn.del:hover{background:var(--danger-soft);border-color:var(--danger)}
 .place{display:flex;gap:4px;align-items:flex-start;color:var(--muted);font-size:14px;margin-top:3px;overflow-wrap:anywhere}
 .place svg{width:14px;height:14px;flex:none;margin-top:3px}
 .people{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
@@ -107,7 +157,6 @@ main{padding-block:16px 120px}
 .alert{margin-top:8px;font-size:13px;color:var(--danger);font-weight:600;display:flex;gap:6px;align-items:flex-start}
 .alert svg{width:15px;height:15px;flex:none;margin-top:2px}
 .meta{margin-top:8px;font-size:12px;color:var(--muted)}
-.card-acts{display:flex;gap:2px;flex:none}
 .locked{font-size:12px;color:var(--muted)}
 
 .grid-box{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
@@ -183,7 +232,7 @@ textarea.in{min-height:70px;resize:vertical}
 #toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;flex-direction:column;gap:8px;width:min(92vw,440px);pointer-events:none}
 .toast{background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .toast.err{background:var(--danger);color:var(--surface)}
-@media (max-width:480px){.act{grid-template-columns:50px 1fr;gap:8px}.act .time{font-size:13px}.top-actions .lbl{display:none}}
+@media (max-width:480px){.tl{--tcol:48px;--dcol:24px}.tl-time{font-size:14px}.tl-time small{font-size:12px}.top-actions .lbl{display:none}.day-num{width:48px;height:48px}.day-title h2{font-size:17px}}
 .me-chip{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .me-chip .av{margin:0;border:0}
 .who-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -223,6 +272,7 @@ window.FIREBASE_CONFIG = {
       <a href="#nguoi" data-tab="nguoi">Theo người</a>
       <a href="#lich-su" data-tab="lich-su">Lịch sử</a>
     </nav>
+    <div class="daynav" id="daynav" role="group" aria-label="Chuyển nhanh đến ngày" hidden></div>
   </div>
 </header>
 <main class="wrap" id="main" aria-live="polite"></main>
@@ -313,6 +363,8 @@ function computeConflicts(){
 const $=id=>document.getElementById(id);
 function render(){
   renderHeader();
+  renderDayNav();
+  const hd=document.querySelector("header.top");if(hd)document.documentElement.style.setProperty("--hh",hd.offsetHeight+"px");
   const main=$("main");
   document.querySelectorAll(".tabs a").forEach(a=>a.setAttribute("aria-current",a.dataset.tab===S.tab?"page":"false"));
   const gb=main.querySelector(".grid-box");const gl=gb?gb.scrollLeft:0;
@@ -359,9 +411,44 @@ function renderBody(){
   if(!S.trip)return banners()+`<div class="state"><h2>Chưa có chuyến đi nào</h2><p>Tạo chuyến đi với tên, điểm đến và ngày đi, ngày về. Sau đó cả đoàn có thể thêm hoạt động cho từng ngày.</p>${S.readOnly?`<p>Bạn đang ở chế độ chỉ xem.</p>`:`<button class="btn primary" data-act="trip">Tạo chuyến đi</button>`}</div>`;
   return banners()+(S.tab==="nguoi"?renderPeople():renderDays());
 }
+function durText(m){if(m<=0)return"";const h=Math.floor(m/60),mm=m%60;return (h?h+" giờ":"")+(h&&mm?" ":"")+(mm?mm+" phút":"")}
+function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()}
+function renderDayNav(){
+  const nav=$("daynav");
+  const show=ready()&&S.trip&&S.tab==="ngay";
+  nav.hidden=!show;if(!show){nav.innerHTML="";return}
+  const today=isoD(new Date());
+  const list=actList().filter(a=>S.filter==="all"||validPeople(a.people).includes(S.filter));
+  nav.innerHTML=tripDays().map((d,i)=>{const n=list.filter(a=>a.date===d).length;return `<button type="button" data-act="goto" data-date="${d}" class="${d===today?"today":""}"><small>${d===today?"Hôm nay":"Ngày "+(i+1)}</small><b>${WDS[parseD(d).getDay()]} ${esc(fmtDS(d))}</b><small>${n} hoạt động</small></button>`}).join("");
+}
+function timelineHtml(items,conf,d,dayNo){
+  const today=isoD(new Date());const isToday=d===today;const nm=nowMin();
+  const allday=items.filter(a=>!isTime(a.start));
+  const timed=items.filter(a=>isTime(a.start));
+  let h=`<div class="tl">`;
+  allday.forEach(a=>{h+=rowHtml(a,conf[a.id],{allday:true,past:d<today})});
+  let prevEnd=null,nowShown=!isToday;
+  timed.forEach(a=>{
+    const s=toMin(a.start),e=toMin(a.end)??s;
+    if(prevEnd!=null&&s-prevEnd>=60){
+      const from=pad(Math.floor(prevEnd/60))+":"+pad(prevEnd%60);
+      h+=`<div class="tl-row tl-gap"><span></span><span></span>${S.readOnly?`<span class="gl">Trống ${esc(durText(s-prevEnd))}</span>`:`<button type="button" class="slot" data-act="add" data-date="${d}" data-start="${from}" data-end="${esc(a.start)}"><span class="plus">+</span><span>Trống ${esc(from)}–${esc(a.start)} (${esc(durText(s-prevEnd))}) · thêm hoạt động</span></button>`}</div>`;
+    }
+    if(!nowShown&&nm<s){h+=nowRow(nm);nowShown=true}
+    const past=d<today||(isToday&&e<nm);
+    h+=rowHtml(a,conf[a.id],{past});
+    prevEnd=prevEnd==null?e:Math.max(prevEnd,e);
+  });
+  if(!nowShown)h+=nowRow(nm);
+  if(!S.readOnly)h+=`<div class="tl-row"><span></span><span></span><button type="button" class="slot" data-act="add" data-date="${d}"${prevEnd!=null?` data-start="${pad(Math.floor(Math.min(prevEnd,1380)/60))}:${pad(Math.min(prevEnd,1380)%60)}"`:""}><span class="plus">+</span><span>${items.length?"Thêm hoạt động tiếp theo":"Thêm hoạt động đầu tiên"} cho Ngày ${dayNo}</span></button></div>`;
+  else if(!items.length)h+=`<div class="tl-row"><span></span><span></span><span class="gl" style="grid-column:3;color:var(--muted);font-size:14px">${S.filter==="all"?"Chưa có hoạt động nào.":esc(mName(S.filter))+" rảnh cả ngày."}</span></div>`;
+  return h+`</div>`;
+}
+function nowRow(nm){return `<div class="tl-row tl-now" aria-label="Bây giờ"><span class="t">${pad(Math.floor(nm/60))}:${pad(nm%60)}</span><span class="d"></span><span class="l"></span></div>`}
 function renderDays(){
   const conf=computeConflicts();
   const days=tripDays();
+  const today=isoD(new Date());
   let h=`<div class="filters" role="group" aria-label="Lọc theo người"><button class="chip plain" data-act="filter" data-id="all" aria-pressed="${S.filter==="all"}">Cả đoàn</button>`;
   MIDS.forEach(id=>{h+=`<button class="chip" data-act="filter" data-id="${id}" aria-pressed="${S.filter===id}">${av(id)}${esc(mName(id))}</button>`});
   h+=`</div>`;
@@ -370,33 +457,46 @@ function renderDays(){
   if(nConf)h+=`<div class="banner err"><span>${IC.warn.replace("<svg",'<svg style="width:16px;height:16px;vertical-align:-3px;margin-right:6px"')}Có ${nConf} hoạt động bị trùng giờ. Chúng được viền đỏ bên dưới.</span></div>`;
   days.forEach((d,i)=>{
     const items=sortActs(list.filter(a=>a.date===d));
-    h+=`<section class="day" id="d-${d}"><div class="day-head"><h2><span class="n">Ngày ${i+1}</span>${esc(dayLabel(d))}</h2>
-    <span class="cnt">${items.length} hoạt động${S.readOnly?"":` · <button class="btn ghost" data-act="add" data-date="${d}">+ Thêm</button>`}</span></div>`;
-    h+=items.length?items.map(a=>actHtml(a,conf[a.id])).join(""):`<div class="empty-day">${S.filter==="all"?"Chưa có hoạt động nào trong ngày này.":esc(mName(S.filter))+" đang rảnh cả ngày."}</div>`;
+    const timed=items.filter(a=>isTime(a.start));
+    const span=timed.length?` · ${timed[0].start} – ${timed.reduce((m,a)=>{const e=a.end||a.start;return e>m?e:m},"")}`:"";
+    const dt=parseD(d);
+    h+=`<section class="day${d===today?" today":""}" id="d-${d}"><div class="day-head"><div class="day-num"><small>Ngày</small><b>${i+1}</b></div>
+      <div class="day-title"><h2>${esc(WD[dt.getDay()])}, ${esc(fmtDS(d))}${d===today?`<span class="pill-today">Hôm nay</span>`:""}</h2><div class="sub">${items.length} hoạt động${esc(span)}</div></div></div>`;
+    h+=timelineHtml(items,conf,d,i+1);
     h+=`</section>`;
   });
   const out=sortActs(list.filter(a=>!days.includes(a.date)));
-  if(out.length){h+=`<section class="day"><div class="day-head"><h2>Ngoài lịch trình</h2><span class="cnt">Ngày nằm ngoài ngày đi – ngày về</span></div>${out.map(a=>actHtml(a,conf[a.id],true)).join("")}</section>`}
+  if(out.length){h+=`<section class="day"><div class="day-head"><div class="day-num"><small>Ngoài</small><b>?</b></div><div class="day-title"><h2>Ngoài lịch trình</h2><div class="sub">Ngày nằm ngoài ngày đi – ngày về. Hãy sửa lại ngày.</div></div></div><div class="tl">${out.map(a=>rowHtml(a,conf[a.id],{showDate:true})).join("")}</div></section>`}
   return h;
 }
-function actHtml(a,conf,showDate){
+function rowHtml(a,conf,o){
+  o=o||{};
   const tk=typeOf(a);const p=validPeople(a.people);
-  const time=isTime(a.start)?`${esc(a.start)}${isTime(a.end)?`<small>${esc(a.end)}</small>`:""}`:`<small>Cả ngày</small>`;
+  const s=toMin(a.start),e=toMin(a.end);
+  const time=o.allday?`<div class="tl-time allday">Cả ngày</div>`:`<div class="tl-time">${esc(a.start||"")}${isTime(a.end)?`<small>${esc(a.end)}</small>`:""}${s!=null&&e!=null&&e>s?`<span class="dur">${esc(durText(e-s))}</span>`:""}</div>`;
   const people=p.length===MIDS.length?`<span class="allbadge">Cả đoàn</span>`:`<span class="avs">${p.map(av).join("")}</span><span class="names">${esc(p.map(mName).join(", "))}</span>`;
   let alert="";
   if(conf&&conf.length){alert=conf.map(c=>`<div class="alert">${IC.warn}<span>Trùng giờ với “${esc(c.other.title)}” (${esc(timeText(c.other))}): ${esc(c.members.map(mName).join(", "))}</span></div>`).join("")}
   const can=canModify(a);
-  const acts=can?`<div class="card-acts"><button class="btn ghost" data-act="edit" data-id="${esc(a.id)}" aria-label="Sửa ${esc(a.title)}">${IC.edit}</button><button class="btn ghost" data-act="del" data-id="${esc(a.id)}" aria-label="Xóa ${esc(a.title)}">${IC.trash}</button></div>`:"";
-  let meta=`Thêm bởi ${esc(actorName(a.createdBy))}`;
-  if(a.updatedAt&&a.updatedAt!==a.createdAt)meta+=` · Sửa lần cuối bởi ${esc(actorName(a.updatedBy))} lúc ${esc(fmtTs(a.updatedAt))}`;
-  else if(a.createdAt&&a.createdBy)meta+=` lúc ${esc(fmtTs(a.createdAt))}`;
-  if(!can&&!S.readOnly)meta+=` · <span class="locked">Chỉ người tạo hoặc chủ trang sửa được</span>`;
-  return `<article class="act"><div class="time">${time}</div><div class="card${conf?" conflict":""}" style="--tc:var(--t-${tk})">
-    <div class="card-top"><div style="min-width:0"><span class="type">${esc(TYPE_L[tk])}${showDate&&a.date?" · "+esc(fmtD(a.date)):""}</span><h3>${esc(a.title)}</h3>
-    ${a.place?`<div class="place">${IC.pin}<span>${esc(a.place)}</span></div>`:""}</div>${acts}</div>
-    <div class="people">${people}</div>
-    ${a.note?`<div class="note">${esc(a.note)}</div>`:""}${alert}
-    <div class="meta">${meta}</div></div></article>`;
+  const edited=a.updatedAt&&a.createdAt&&a.updatedAt!==a.createdAt;
+  const lastBy=edited?a.updatedBy:a.createdBy, lastAt=edited?a.updatedAt:a.createdAt;
+  const fresh=lastAt&&lastBy&&lastBy!==S.uid&&Date.now()-lastAt<864e5?`<span class="fresh">${edited?"Vừa sửa":"Mới thêm"}</span>`:"";
+  let who=`Thêm bởi <b>${esc(actorName(a.createdBy))}</b>`;
+  if(edited)who+=` · Sửa bởi <b>${esc(actorName(a.updatedBy))}</b> lúc ${esc(fmtTs(a.updatedAt))}`;
+  else if(a.createdAt&&a.createdBy)who+=` lúc ${esc(fmtTs(a.createdAt))}`;
+  if(!can&&!S.readOnly)who+=` · <span class="locked">Chỉ người tạo hoặc chủ trang sửa được</span>`;
+  const btns=can?`<div class="card-btns"><button type="button" class="btn sm edit" data-act="edit" data-id="${esc(a.id)}">${IC.edit}Sửa</button><button type="button" class="btn sm del" data-act="del" data-id="${esc(a.id)}" aria-label="Xóa ${esc(a.title)}">${IC.trash}Xóa</button></div>`:"";
+  return `<article class="tl-row${conf?" conflict":""}${o.past?" past":""}" style="--tc:var(--t-${tk})">${time}<span class="tl-dot${o.allday?" sq":""}"></span>
+    <div class="card${conf?" conflict":""}">
+      <div class="card-main${can?" editable":""}"${can?` data-act="edit" data-id="${esc(a.id)}" title="Bấm để sửa"`:""}>
+        <div class="card-top"><span class="type">${esc(TYPE_L[tk])}${o.showDate&&a.date?" · "+esc(fmtD(a.date)):""}</span>${fresh}</div>
+        <h3>${esc(a.title)}</h3>
+        ${a.place?`<div class="place">${IC.pin}<span>${esc(a.place)}</span></div>`:""}
+        <div class="people">${people}</div>
+        ${a.note?`<div class="note">${esc(a.note)}</div>`:""}${alert}
+      </div>
+      <div class="card-foot"><span class="who">${who}</span>${btns}</div>
+    </div></article>`;
 }
 function renderPeople(){
   const conf=computeConflicts();const days=tripDays();
@@ -498,7 +598,7 @@ function openModal(html,onClose){
 function closeModal(){$("modal-root").innerHTML="";document.body.style.overflow="";if(modalClose)modalClose();modalClose=null}
 
 /* ---------- activity form ---------- */
-function actForm(a,defDate){
+function actForm(a,defDate,defStart,defEnd){
   const days=tripDays();const date=a?a.date:(defDate||days[0]||"");
   const opts=days.map((d,i)=>`<option value="${d}"${d===date?" selected":""}>Ngày ${i+1} · ${esc(dayLabel(d))}</option>`).join("")+(date&&!days.includes(date)?`<option value="${esc(date)}" selected>${esc(fmtD(date))} (ngoài lịch trình)</option>`:"");
   const tk=a?typeOf(a):"see";
@@ -508,8 +608,8 @@ function actForm(a,defDate){
     <label class="f">Tên hoạt động <span class="req" aria-hidden="true">*</span><input class="in" id="f-title" maxlength="120" value="${a?esc(a.title):""}" placeholder="Ví dụ: Ăn trưa bánh căn" autofocus></label>
     <div class="ferr" id="e-title" hidden></div>
     <label class="f">Ngày<select class="in" id="f-date">${opts}</select></label>
-    <div class="row2"><label class="f">Giờ bắt đầu<input class="in" type="time" id="f-start" value="${a?esc(a.start||""):""}"></label>
-    <label class="f">Giờ kết thúc<input class="in" type="time" id="f-end" value="${a?esc(a.end||""):""}"></label></div>
+    <div class="row2"><label class="f">Giờ bắt đầu<input class="in" type="time" id="f-start" value="${esc(a?(a.start||""):(isTime(defStart)?defStart:""))}"></label>
+    <label class="f">Giờ kết thúc<input class="in" type="time" id="f-end" value="${esc(a?(a.end||""):(isTime(defEnd)?defEnd:""))}"></label></div>
     <div class="ferr" id="e-time" hidden></div>
     <label class="f">Địa điểm<input class="in" id="f-place" maxlength="160" value="${a?esc(a.place||""):""}" placeholder="Ví dụ: Chợ Đà Lạt"></label>
     <div class="f" style="display:flex;flex-direction:column;gap:6px"><span class="f" style="display:block">Loại</span><div class="typepick" role="radiogroup" aria-label="Loại">
@@ -675,7 +775,8 @@ document.addEventListener("click",e=>{
   switch(act){
     case"close":closeModal();break;
     case"filter":S.filter=el.dataset.id;render();break;
-    case"add":if(!S.readOnly&&S.trip)openModal(actForm(null,el.dataset.date));break;
+    case"add":if(!S.readOnly&&S.trip)openModal(actForm(null,el.dataset.date,el.dataset.start,el.dataset.end));break;
+    case"goto":{const sec=$("d-"+el.dataset.date);if(sec)sec.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});break}
     case"edit":{const a=S.acts[el.dataset.id];if(a&&canModify(a))openModal(actForm(a));break}
     case"del":{const a=S.acts[el.dataset.id];if(a&&canModify(a))openDelete(a.id);break}
     case"del-confirm":if(el.dataset.step==="1"){el.dataset.step="2";el.classList.add("armed");el.innerHTML=IC.trash+"Bấm lần nữa để xóa hẳn"}else doDelete(el.dataset.id,el);break;
