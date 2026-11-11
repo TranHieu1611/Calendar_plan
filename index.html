@@ -271,6 +271,51 @@ textarea.in{min-height:70px;resize:vertical}
 .linkbox{display:flex;gap:6px}
 .linkbox .in{font-size:13px}
 pre.code{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;font-size:12px}
+
+/* ===== Đầu trang gọn: thanh tên chuyến + menu, tab dạng nút gộp, lọc ngày/người một dòng ===== */
+.top .wrap{padding-block:8px 0;gap:8px}
+.bar{display:flex;align-items:center;gap:10px;min-height:44px}
+.bar .trip-id{flex:1;min-width:0}
+.bar h1{font-size:clamp(17px,4.2vw,21px);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-wrap:nowrap}
+.bar .trip-meta{font-size:12.5px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-r{display:flex;align-items:center;gap:6px;flex:none}
+.me-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px 3px 3px;cursor:pointer;font-size:13px;font-weight:600;min-height:34px;max-width:220px}
+.me-btn:hover{background:var(--surface-2)}
+.me-btn .av{margin:0;border:0;width:26px;height:26px}
+.me-btn .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me-btn .role{flex:none}
+.icon-btn{position:relative;display:inline-grid;place-items:center;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink)}
+.icon-btn:hover{background:var(--surface-2)}
+.icon-btn svg{width:18px;height:18px}
+.icon-btn .dot{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px;border:2px solid var(--surface)}
+.row2{display:flex;align-items:center;gap:8px}
+.seg.tabs{display:inline-flex;gap:2px;padding:3px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;overflow-x:auto;max-width:100%}
+.seg.tabs a{padding:5px 12px;border:0;border-radius:7px;font-size:13.5px;color:var(--muted)}
+.seg.tabs a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.subbar{gap:6px;padding-bottom:8px}
+.top .daynav button{flex-direction:row;gap:6px;min-width:0;padding:5px 10px;border-radius:999px;font-size:13px}
+.top .daynav button b{font-size:13px;font-family:var(--f-body);font-weight:600}
+.top .daynav .cnt{font-size:11px;font-weight:700;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--surface-2);color:var(--muted);display:inline-grid;place-items:center}
+.top .daynav button.active .cnt{background:rgba(255,255,255,.18);color:inherit}
+.top .daynav button.today:not(.active){border-color:var(--accent);color:var(--accent)}
+.top .daynav .td{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.top .daynav button.active .td{background:currentColor}
+.subbar .filters{gap:4px;padding-bottom:0}
+.subbar .chip{padding:3px 10px 3px 3px;font-size:13px}
+.subbar .chip.plain{padding:3px 10px}
+.subbar .chip .av{width:20px;height:20px;font-size:10px}
+main{padding-block:12px 110px}
+.banner{padding:7px 10px 7px 12px;font-size:13.5px;margin-bottom:8px;gap:8px}
+.banner .btn{min-height:30px;padding:3px 10px;font-size:13px}
+.menu{position:fixed;z-index:15;min-width:230px;max-width:calc(100vw - 24px);background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px}
+.menu .mh{padding:8px 10px 6px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);margin-bottom:4px}
+.menu .mh b{color:var(--ink);font-size:14px;display:block}
+.menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:9px 10px;font-size:14px;cursor:pointer;color:var(--ink)}
+.menu button:hover,.menu button:focus-visible{background:var(--surface-2)}
+.menu button svg{width:17px;height:17px;flex:none;color:var(--muted)}
+.menu button .badge{margin-left:auto;background:var(--danger);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:0 7px}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+@media (max-width:480px){.me-btn .nm{max-width:70px}.me-btn{padding-right:8px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -291,24 +336,24 @@ window.FIREBASE_CONFIG = {
 
 <header class="top">
   <div class="wrap">
-    <div class="trip-row">
-      <div class="trip-id" id="trip-id">
-        <div class="eyebrow">Lịch trình nhóm</div>
-        <h1>Đang tải chuyến đi…</h1>
-      </div>
-      <div class="top-actions" id="top-actions"></div>
+    <div class="bar">
+      <div class="trip-id" id="trip-id"><h1>Đang tải chuyến đi…</h1></div>
+      <div class="bar-r" id="top-actions"></div>
     </div>
-    <nav class="tabs" aria-label="Chế độ xem">
-      <a href="#ngay" data-tab="ngay">Theo ngày</a>
-      <a href="#nguoi" data-tab="nguoi">Theo người</a>
-      <a href="#lich-su" data-tab="lich-su">Lịch sử</a>
-    </nav>
+    <div class="row2">
+      <nav class="tabs seg" aria-label="Chế độ xem">
+        <a href="#ngay" data-tab="ngay">Theo ngày</a>
+        <a href="#nguoi" data-tab="nguoi">Theo người</a>
+        <a href="#lich-su" data-tab="lich-su">Lịch sử</a>
+      </nav>
+    </div>
     <div class="subbar" id="subbar" hidden>
       <div class="daynav" id="daynav" role="group" aria-label="Lọc theo ngày"></div>
       <div class="filters" id="pfilter" role="group" aria-label="Lọc theo người"></div>
     </div>
   </div>
 </header>
+<div class="menu" id="menu" role="menu" hidden></div>
 <main class="wrap" id="main" aria-live="polite"></main>
 <button class="btn primary fab" id="fab" data-act="add" hidden>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm hoạt động
@@ -411,34 +456,63 @@ function render(){
 function ready(){return !S.dbMissing&&S.tripLoaded&&S.membersLoaded&&S.actsLoaded}
 function renderHeader(){
   const t=S.trip;const box=$("trip-id");
-  if(!ready()){box.innerHTML=`<div class="eyebrow">Lịch trình nhóm</div><h1>${S.dbMissing?"Lịch trình cả đoàn":"Đang tải chuyến đi…"}</h1>`;$("top-actions").innerHTML="";return}
-  if(!t){box.innerHTML=`<div class="eyebrow">Lịch trình nhóm · 8 người</div><h1>Chưa có chuyến đi</h1>`;$("top-actions").innerHTML="";return}
+  if(!ready()){box.innerHTML=`<h1>${S.dbMissing?"Lịch trình cả đoàn":"Đang tải chuyến đi…"}</h1>`;$("top-actions").innerHTML="";return}
+  const n=S.isAdmin?pendingReqs().length:0;
+  const vMid=myMid();
+  const role=S.isAdmin?`<span class="role">Quản trị</span>`:S.readOnly?`<span class="role vw">Chỉ xem</span>`:`<span class="role ed">Được sửa</span>`;
+  $("top-actions").innerHTML=`<button type="button" class="me-btn" data-act="menu" aria-haspopup="menu" title="Tài khoản và tùy chọn">${vMid?av(vMid)+`<span class="nm">${esc(mName(vMid))}</span>`:""}${role}</button>
+  <button type="button" class="icon-btn" data-act="menu" aria-haspopup="menu" aria-label="Tùy chọn${n?", "+n+" yêu cầu đang chờ":""}"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>${n?`<span class="dot">${n}</span>`:""}</button>`;
+  if(!t){box.innerHTML=`<h1>Chưa có chuyến đi</h1>`;return}
   const days=tripDays().length;
-  box.innerHTML=`<div class="eyebrow">${esc(t.destination||"Chưa có điểm đến")}</div><h1>${esc(t.name||"Chuyến đi chưa đặt tên")}</h1>
-  <div class="trip-meta">${esc(fmtD(t.startDate))} → ${esc(fmtD(t.endDate))}${days?` · ${days} ngày`:""} · 8 thành viên</div>`;
-  const meP=S.people[S.uid];
-  const sm=(sessGet()||{}).mid;const vMid=S.readOnly?(MIDS.includes(sm)?sm:""):(meP&&MIDS.includes(meP.memberId)?meP.memberId:"");
-  const meChip=`<div class="me-chip">${vMid?`${av(vMid)}Bạn là <b>${esc(mName(vMid))}</b>`:S.readOnly?"":"Bạn chưa chọn tên"}${S.isAdmin?` <span class="role">Quản trị</span>`:S.readOnly?` <span class="role vw">Chỉ xem</span>`:` <span class="role ed">Được sửa</span>`} · <button class="btn ghost" data-act="logout" style="min-height:0;padding:2px 6px">${S.readOnly?"Đăng nhập để sửa":"Đổi người / thoát"}</button></div>`;
-  box.insertAdjacentHTML("beforeend",meChip);
-  $("top-actions").innerHTML=`<button class="btn" data-act="copy">${IC.copy}<span class="lbl">Sao chép lịch</span></button>
-  <button class="btn" data-act="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span class="lbl">Chia sẻ</span></button>
-  ${S.readOnly?"":`<button class="btn" data-act="trip">${IC.cog}<span class="lbl">Chuyến đi & thành viên</span></button>`}
-  ${S.isAdmin?`<button class="btn${pendingReqs().length?" primary":""}" data-act="requests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></svg><span class="lbl">Quyền sửa</span>${pendingReqs().length?` <b>${pendingReqs().length}</b>`:""}</button>`:""}`;
+  const sd=isDate(t.startDate)?parseD(t.startDate):null,ed=isDate(t.endDate)?parseD(t.endDate):null;
+  const range=sd&&ed?(sd.getMonth()===ed.getMonth()&&sd.getFullYear()===ed.getFullYear()?`${sd.getDate()}–${fmtDS(t.endDate)}/${ed.getFullYear()}`:`${fmtDS(t.startDate)} – ${fmtD(t.endDate)}`):"";
+  box.innerHTML=`<h1>${esc(t.name||"Chuyến đi chưa đặt tên")}</h1><div class="trip-meta">${esc(range)}${days?` · ${days} ngày`:""}${t.destination?` · ${esc(t.destination)}`:""}</div>`;
 }
+function myMid(){
+  const meP=S.people[S.uid];const sm=(sessGet()||{}).mid;
+  return S.readOnly?(MIDS.includes(sm)?sm:""):(meP&&MIDS.includes(meP.memberId)?meP.memberId:"");
+}
+/* Menu ⋯: gom các lệnh ít dùng để đầu trang gọn */
+const MI={
+  share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></svg>',
+  door:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>',
+  hand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>'
+};
+function openMenu(anchor){
+  const m=$("menu");
+  if(!m.hidden){closeMenu();return}
+  const vMid=myMid();const n=S.isAdmin?pendingReqs().length:0;const st=S.myReq&&S.myReq.status;
+  const it=(act,icon,label,extra)=>`<button type="button" role="menuitem" data-act="${act}">${icon}<span>${label}</span>${extra||""}</button>`;
+  m.innerHTML=`<div class="mh"><b>${vMid?esc(mName(vMid)):"Khách"}</b>${S.isAdmin?"Quản trị viên":S.readOnly?"Đang chỉ xem":"Được sửa lịch"}</div>
+    ${S.trip?it("copy",IC.copy,"Sao chép lịch gửi Zalo"):""}
+    ${it("share",MI.share,"Chia sẻ link")}
+    ${!S.readOnly?it("trip",IC.cog,S.trip?"Chuyến đi & tên thành viên":"Tạo chuyến đi"):""}
+    ${S.isAdmin?it("requests",MI.users,"Quyền sửa",n?`<span class="badge">${n}</span>`:""):""}
+    <hr>
+    ${S.readOnly&&st!=="pending"?it("req",MI.hand,"Xin quyền sửa"):""}
+    ${it("logout",MI.door,S.readOnly?"Đăng nhập để sửa":"Đổi người / thoát")}`;
+  m.hidden=false;
+  const r=anchor.getBoundingClientRect();
+  m.style.top=Math.round(r.bottom+6)+"px";
+  m.style.right=Math.max(12,Math.round(window.innerWidth-r.right))+"px";
+  const f=m.querySelector("button");if(f)f.focus();
+}
+function closeMenu(){const m=$("menu");if(!m.hidden){m.hidden=true;m.innerHTML=""}}
 function banners(){
   let h="";
   if(S.demo){const c=window.LT_DEMO_CODES||{};const asViewer=/[?&]as=/.test(location.search);
-    h+=`<div class="banner warn"><span><b>Chế độ thử</b>, đang là <b>${asViewer?"người xem (máy khác)":"quản trị viên"}</b>. Dữ liệu giả, không ảnh hưởng lịch thật. Mã thử: sửa <code>${esc(c.edit||"")}</code>, quản trị <code>${esc(c.admin||"")}</code>.</span>
-    <span style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn" href="${asViewer?"?demo":"?demo&amp;as=khach"}" target="_blank" rel="noopener">Mở tab ${asViewer?"quản trị viên":"người xem"}</a><a class="btn" href="?demo&amp;reset">Làm lại từ đầu</a></span></div>`}
+    h+=`<div class="banner warn"><span><b>Chế độ thử</b> · mã sửa <code>${esc(c.edit||"")}</code> · mã quản trị <code>${esc(c.admin||"")}</code></span>
+    <span style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn" href="${asViewer?"?demo":"?demo&amp;as=khach"}" target="_blank" rel="noopener">Mở tab ${asViewer?"quản trị":"máy khác"}</a><a class="btn" href="?demo&amp;reset">Làm lại</a></span></div>`}
   if(S.subError)h+=`<div class="banner err">${esc(S.subError)}</div>`;
-  else if(S.stale)h+=`<div class="banner warn">Chưa kết nối được kho dữ liệu chung. Thông tin bên dưới có thể chưa mới nhất; trang sẽ tự cập nhật khi kết nối lại.</div>`;
+  else if(S.stale)h+=`<div class="banner warn">Chưa kết nối được dữ liệu chung, lịch có thể chưa mới nhất.</div>`;
   if(S.readOnly&&ready()&&S.uid){
     const st=S.myReq&&S.myReq.status;
-    const msg=st==="pending"?"Yêu cầu sửa của bạn đã gửi, đang chờ trưởng đoàn duyệt.":st==="rejected"?"Yêu cầu sửa trước đó chưa được duyệt. Bạn có thể gửi lại hoặc đăng nhập bằng mã.":"Bạn đang ở chế độ chỉ xem. Muốn thêm hoặc sửa lịch, hãy đăng nhập bằng mã sửa hoặc xin quyền sửa.";
-    h+=`<div class="banner${st==="pending"?" info":""}"><span>${esc(msg)}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" data-act="logout">Đăng nhập để sửa</button>${st==="pending"?"":`<button class="btn" data-act="req">Xin quyền sửa</button>`}</span></div>`;
+    h+=st==="pending"?`<div class="banner info"><span>Đã gửi yêu cầu sửa, đang chờ trưởng đoàn duyệt.</span></div>`
+      :`<div class="banner"><span>Bạn đang chỉ xem.</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" data-act="logout">Đăng nhập để sửa</button><button class="btn" data-act="req">Xin quyền</button></span></div>`;
   }
-  if(S.isAdmin&&ready()){const n=pendingReqs().length;if(n)h+=`<div class="banner warn"><span><b>${n} yêu cầu xin quyền sửa</b> đang chờ bạn duyệt: ${esc(pendingReqs().map(r=>MIDS.includes(r.memberId)?mName(r.memberId):"Không rõ").join(", "))}.</span><button class="btn primary" data-act="requests">Xem và duyệt</button></div>`}
-  if(ready()&&hasSample())h+=`<div class="banner info"><span>Đây là chuyến mẫu để xem thử. Xóa đi khi cả đoàn bắt đầu nhập lịch thật.</span>${S.readOnly?"":`<button class="btn" data-act="clear-sample">Xóa dữ liệu mẫu</button>`}</div>`;
+  if(S.isAdmin&&ready()){const n=pendingReqs().length;if(n)h+=`<div class="banner warn"><span><b>${n} yêu cầu sửa</b>: ${esc(pendingReqs().map(r=>MIDS.includes(r.memberId)?mName(r.memberId):"Không rõ").join(", "))}</span><button class="btn primary" data-act="requests">Duyệt</button></div>`}
+  if(ready()&&hasSample())h+=`<div class="banner info"><span>Đang hiện chuyến mẫu.</span>${S.readOnly?"":`<button class="btn" data-act="clear-sample">Xóa dữ liệu mẫu</button>`}</div>`;
   return h;
 }
 function renderBody(){
@@ -469,8 +543,8 @@ function renderDayNav(){
   const today=isoD(new Date());
   const list=actList().filter(a=>S.filter==="all"||validPeople(a.people).includes(S.filter));
   const ns=nav.scrollLeft;
-  nav.innerHTML=`<button type="button" data-act="goto" data-date="all" class="all${S.day==="all"?" active":""}" aria-pressed="${S.day==="all"}"><small>Cả chuyến</small><b>Tất cả</b><small>${list.length} hoạt động</small></button>`+
-    days.map((d,i)=>{const n=list.filter(a=>a.date===d).length;const on=S.day===d;return `<button type="button" data-act="goto" data-date="${d}" class="${d===today?"today":""}${on?" active":""}" aria-pressed="${on}"><small>${d===today?"Hôm nay":"Ngày "+(i+1)}</small><b>${WDS[parseD(d).getDay()]} ${esc(fmtDS(d))}</b><small>${n} hoạt động</small></button>`}).join("");
+  nav.innerHTML=`<button type="button" data-act="goto" data-date="all" class="all${S.day==="all"?" active":""}" aria-pressed="${S.day==="all"}"><b>Tất cả</b><span class="cnt">${list.length}</span></button>`+
+    days.map((d,i)=>{const n=list.filter(a=>a.date===d).length;const on=S.day===d;return `<button type="button" data-act="goto" data-date="${d}" class="${d===today?"today":""}${on?" active":""}" aria-pressed="${on}" title="Ngày ${i+1}${d===today?" · Hôm nay":""} · ${n} hoạt động">${d===today?`<span class="td" aria-hidden="true"></span>`:""}<b>${WDS[parseD(d).getDay()]} ${esc(fmtDS(d))}</b><span class="cnt">${n}</span></button>`}).join("");
   nav.scrollLeft=ns;
 }
 function timelineHtml(items,conf,d,dayNo){
@@ -505,7 +579,7 @@ function renderDays(){
   if(S.filter!=="all")h+=`<div class="banner info"><span>${av(S.filter)} Đang xem lịch của <b>${esc(mName(S.filter))}</b>. Ô gạch đứt là lúc ${esc(mName(S.filter))} còn rảnh.</span><button class="btn" data-act="filter" data-id="all">Xem cả đoàn</button></div>`;
   const list=actList().filter(a=>S.filter==="all"||validPeople(a.people).includes(S.filter));
   const nConf=Object.keys(conf).filter(id=>S.filter==="all"||(S.acts[id]&&validPeople(S.acts[id].people).includes(S.filter))).length;
-  if(nConf)h+=`<div class="banner err"><span>${IC.warn.replace("<svg",'<svg style="width:16px;height:16px;vertical-align:-3px;margin-right:6px"')}Có ${nConf} hoạt động bị trùng giờ. Chúng được viền đỏ bên dưới.</span></div>`;
+  if(nConf)h+=`<div class="banner err"><span>${IC.warn.replace("<svg",'<svg style="width:16px;height:16px;vertical-align:-3px;margin-right:6px"')}${nConf} hoạt động bị trùng giờ (viền đỏ)</span></div>`;
   days.forEach((d,i)=>{
     if(S.day!=="all"&&S.day!==d)return;
     const items=sortActs(list.filter(a=>a.date===d));
@@ -854,7 +928,10 @@ function openCopy(){
 
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{
-  const el=e.target.closest("[data-act]");if(!el)return;
+  const el=e.target.closest("[data-act]");
+  if(el&&el.dataset.act==="menu"){openMenu(el);return}
+  if(!e.target.closest("#menu")||el)closeMenu();
+  if(!el)return;
   const act=el.dataset.act;
   if(act==="modal-bg"){if(e.target===el&&downOnBg)requestClose();downOnBg=false;return}
   switch(act){
@@ -903,7 +980,12 @@ document.addEventListener("submit",e=>{
   if(e.target.id==="gate-form")submitGate();
   if(e.target.id==="req-form")submitRequest();
 });
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("modal-root").firstChild){e.preventDefault();requestClose()}});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  if(!$("menu").hidden){e.preventDefault();closeMenu();return}
+  if($("modal-root").firstChild){e.preventDefault();requestClose()}
+});
+window.addEventListener("scroll",()=>closeMenu(),{passive:true});
 function route(){const h=(location.hash||"").slice(1);S.tab=["ngay","nguoi","lich-su"].includes(h)?h:"ngay";render()}
 window.addEventListener("hashchange",route);
 
@@ -1000,7 +1082,7 @@ async function submitGate(){
   sessSet({role,mid});S.gateOpen=false;closeModal();applyRole(role);
   if(own!==mid)await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
   await seedIfEmpty();
-  toast(role==="admin"?"Chào "+mName(mid)+", bạn đang ở chế độ quản trị.":"Chào "+mName(mid)+", bạn sửa lịch được rồi.");
+  toast(role==="admin"?"Bạn đang ở chế độ quản trị.":"Đã đăng nhập, bạn sửa lịch được rồi.");
 }
 function gateView(){
   const mid=(document.querySelector('input[name="g-who"]:checked')||{}).value||"";
