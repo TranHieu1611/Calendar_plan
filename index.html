@@ -1049,8 +1049,8 @@ function openGate(prefill){
   const cur=lastMid();
   const own=S.people[S.uid]&&S.people[S.uid].memberId;
   const approved=S.server&&S.server.approved;
-  const chip=id=>{const t=id!==own&&isTaken(id);
-    return `<label class="chip${t?" taken":""}"${t?' title="Đã có người khác chọn"':""}><input type="radio" name="g-who" value="${id}"${cur===id&&!t?" checked":""}${t?" disabled":""}>${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(id)+')"')}<span class="nm">${esc(mName(id))}${t?"<small>Đã có người chọn</small>":""}</span></label>`};
+  const chip=id=>{const n=takenBy(id).length;const t=false;
+    return `<label class="chip${t?" taken":""}"${t?' title="Đã có người khác chọn"':""}><input type="radio" name="g-who" value="${id}"${cur===id&&!t?" checked":""}${t?" disabled":""}>${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(id)+')"')}<span class="nm">${esc(mName(id))}${n?`<small>Đang dùng ở ${n} máy khác</small>`:""}</span></label>`};
   openModal(`<div data-gate="1"><h2>Bạn là ai trong đoàn?</h2>
   <p class="hint" style="margin-top:-6px">Chọn tên của bạn, rồi nhập mã để sửa lịch. Không có mã thì bấm <b>Chỉ xem</b>.</p>
   <form id="gate-form" novalidate><div class="fields">
@@ -1068,7 +1068,6 @@ async function submitGate(){
   showErr("e-gwho",mid?"":"Hãy chọn tên của bạn.");showErr("e-gcode","",["g-code"]);
   if(!mid)return;
   const own=S.people[S.uid]&&S.people[S.uid].memberId;
-  if(mid!==own&&isTaken(mid)){showErr("e-gwho",mName(mid)+" đã có người khác chọn. Nếu đó là bạn trên máy khác, nhờ trưởng đoàn gỡ tên.");return}
   const btn=$("g-save");btn.disabled=true;btn.textContent="Đang kiểm tra…";
   let role="";
   if(code){
@@ -1121,7 +1120,7 @@ function watchAccess(){
       if(!fresh||!S.myReq||S.myReq.status==="rejected")return;
       const mid=S.myReq.memberId||"";
       toast("Trưởng đoàn đã duyệt. Giờ bạn thêm và sửa lịch được rồi.");
-      if(mid&&!isTaken(mid)&&!(S.people[S.uid]&&S.people[S.uid].memberId===mid))await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
+      if(mid&&!(S.people[S.uid]&&S.people[S.uid].memberId===mid))await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
       if(mid)lsSet("lt-last-mid",mid);
       sessSet({role:"editor",mid});if(S.gateOpen){S.gateOpen=false;closeModal()}applyRole("editor");
     },()=>{}));
@@ -1133,7 +1132,7 @@ function openRequest(){
   openModal(`<h2>Xin quyền sửa</h2><p class="hint" style="margin-top:-6px">Trưởng đoàn sẽ thấy yêu cầu này và bấm duyệt. Trang tự chuyển sang chế độ sửa khi được duyệt.</p>
   <form id="req-form" novalidate><div class="fields">
   <div style="display:flex;flex-direction:column;gap:6px"><span class="f" style="display:block">Bạn là ai? <span class="req" aria-hidden="true">*</span></span>
-  <div class="peoplepick">${MIDS.map(id=>{const t=isTaken(id);return `<label${t?' class="taken" title="Đã có người chọn"':""}><input type="radio" name="r-who" value="${id}"${cur===id&&!t?" checked":""}${t?" disabled":""}><span class="pc">${av(id).replace('class="av"','class="av" style="margin:0;border:0;width:22px;height:22px;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}${t?" · đã có người chọn":""}</span></label>`}).join("")}</div>
+  <div class="peoplepick">${MIDS.map(id=>{const t=false;const n=takenBy(id).length;return `<label><input type="radio" name="r-who" value="${id}"${cur===id&&!t?" checked":""}${t?" disabled":""}><span class="pc">${av(id).replace('class="av"','class="av" style="margin:0;border:0;width:22px;height:22px;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}${n?` · đang dùng ở ${n} máy`:""}</span></label>`}).join("")}</div>
   <div class="ferr" id="e-who" hidden></div></div>
   <label class="f">Lời nhắn (không bắt buộc)<textarea class="in" id="r-note" maxlength="300" placeholder="Ví dụ: Em muốn thêm lịch ăn tối ngày 2"></textarea></label>
   </div><div class="mfoot"><button type="button" class="btn" data-act="close">Hủy</button><button type="submit" class="btn primary" id="r-save">Gửi yêu cầu</button></div></form>`);
@@ -1141,7 +1140,6 @@ function openRequest(){
 async function submitRequest(){
   const who=(document.querySelector('input[name="r-who"]:checked')||{}).value;
   showErr("e-who",who?"":"Hãy chọn tên của bạn.");if(!who)return;
-  if(isTaken(who)){showErr("e-who",mName(who)+" đã có người chọn. Hãy chọn tên khác.");return}
   const btn=$("r-save");btn.disabled=true;
   try{await S.db.doc("requests/"+S.uid).set({memberId:who,note:$("r-note").value.trim(),at:Date.now(),status:"pending"});closeModal();toast("Đã gửi yêu cầu. Chờ trưởng đoàn duyệt nhé.")}
   catch(e){btn.disabled=false;toast("Không gửi được yêu cầu. Kiểm tra mạng rồi thử lại.",true)}
@@ -1160,7 +1158,7 @@ function adminModalHtml(){
     return `<div class="hitem"><div class="hline">${MIDS.includes(r.memberId)?av(r.memberId):""}<strong>${esc(MIDS.includes(r.memberId)?mName(r.memberId):"Không rõ tên")}</strong><span class="ht">${esc(fmtTs(r.at))}</span>
     ${r.status==="approved"?`<span class="kind add">Đã duyệt</span>`:r.status==="rejected"?`<span class="kind delete">Đã từ chối</span>`:""}</div>
     ${r.note?`<div class="note">${esc(r.note)}</div>`:""}
-    ${r.status==="pending"&&nameTaken?`<div class="alert">${IC.warn}<span>Tên này đã có máy khác chọn. Nếu duyệt, người này sẽ phải chọn tên khác, hoặc bạn gỡ tên ở máy kia trước.</span></div>`:""}
+    ${r.status==="pending"&&nameTaken?`<div class="alert">${IC.warn}<span>Tên này đang dùng ở máy khác. Có thể là cùng một người đăng nhập thêm máy; nếu không phải, đừng duyệt.</span></div>`:""}
     ${r.status==="pending"?`<div style="display:flex;gap:8px;margin-top:8px"><button class="btn primary sm" data-act="approve" data-id="${esc(r.id)}">Duyệt</button><button class="btn sm del" data-act="reject" data-id="${esc(r.id)}">Từ chối</button></div>`:""}</div>`};
   const members=MIDS.map(mid=>{
     const uids=Object.keys(S.people).filter(u=>S.people[u]&&S.people[u].memberId===mid);
