@@ -57,7 +57,7 @@ h1{font-family:var(--f-display);font-weight:600;font-size:clamp(20px,4.6vw,26px)
 .tabs a{padding:9px 12px 11px;text-decoration:none;color:var(--muted);font-weight:600;font-size:14px;border-bottom:2.5px solid transparent;white-space:nowrap}
 .tabs a[aria-current="page"]{color:var(--accent);border-color:var(--accent)}
 
-.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-size:14px;font-weight:600;cursor:pointer;min-height:36px}
+.btn{text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-size:14px;font-weight:600;cursor:pointer;min-height:36px}
 .btn:hover{background:var(--surface-2)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.primary:hover{filter:brightness(1.07)}
@@ -399,6 +399,7 @@ function renderHeader(){
 }
 function banners(){
   let h="";
+  if(S.demo)h+=`<div class="banner warn"><span><b>Chế độ thử.</b> Dữ liệu giả, chỉ lưu trên trình duyệt này. Thay đổi ở đây không ảnh hưởng tới lịch thật của đoàn.</span><a class="btn" href="?demo&amp;reset">Làm lại từ đầu</a></div>`;
   if(S.subError)h+=`<div class="banner err">${esc(S.subError)}</div>`;
   else if(S.stale)h+=`<div class="banner warn">Chưa kết nối được kho dữ liệu chung. Thông tin bên dưới có thể chưa mới nhất; trang sẽ tự cập nhật khi kết nối lại.</div>`;
   if(S.readOnly&&ready())h+=`<div class="banner">Bạn đang ở chế độ chỉ xem. Muốn thêm hoặc sửa hoạt động, hãy xin trưởng đoàn link sửa.</div>`;
@@ -892,8 +893,13 @@ function lsGet(k){try{return localStorage.getItem(k)||""}catch(_){return""}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(_){}}
 async function boot(){
   route();
+  /* ?demo: dùng dữ liệu giả trên máy (demo.js), không đụng dữ liệu thật */
+  if(/[?&]demo\b/.test(location.search)){
+    await new Promise(r=>{const sc=document.createElement("script");sc.src="demo.js";sc.onload=r;sc.onerror=r;document.head.appendChild(sc)});
+    S.demo=!!window.LT_DEMO;
+  }
   const cfg=window.FIREBASE_CONFIG||{};
-  if(!window.firebase||!cfg.apiKey||!cfg.projectId){S.notConfigured=!!window.firebase;S.dbMissing=!window.firebase;render();return}
+  if(!S.demo&&(!window.firebase||!cfg.apiKey||!cfg.projectId)){S.notConfigured=!!window.firebase;S.dbMissing=!window.firebase;render();return}
   let db;
   try{
     firebase.initializeApp(cfg);

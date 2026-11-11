@@ -11,3 +11,13 @@ Trang: https://tranhieu1611.github.io/Calendar_plan/ (sau khi bật GitHub Pages
 Tính năng: xem theo ngày và theo người, thêm/sửa/xóa hoạt động, báo trùng giờ, lịch sử thay đổi có khôi phục, sao chép lịch để dán vào Zalo hoặc Messenger.
 
 > Không đưa mã bí mật thật vào `firestore.rules` trong kho này. Chỉ sửa mã đó trong Firebase Console.
+
+## Thử trên máy trước khi đẩy lên
+
+```
+node dev-server.js
+```
+
+- http://localhost:5500/?demo : dữ liệu giả, chỉ lưu trên trình duyệt của bạn. Thêm, sửa, xóa thoải mái.
+- http://localhost:5500/?demo&reset : xóa dữ liệu giả, nạp lại chuyến mẫu.
+- http://localhost:5500/ : dữ liệu **thật** của đoàn (cẩn thận).
