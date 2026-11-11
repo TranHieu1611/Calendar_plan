@@ -80,13 +80,10 @@ main{padding-block:16px 120px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
 /* Day navigator (in sticky header) */
-.subbar{display:flex;gap:8px;align-items:stretch;padding-bottom:10px}
-.fsel{flex:none;display:flex;flex-direction:column;justify-content:center;gap:1px;border:1.5px solid var(--line);border-radius:10px;padding:4px 10px;background:var(--surface);cursor:pointer}
-.fsel span{font-size:11px;color:var(--muted);font-weight:500}
-.fsel select{border:0;background:transparent;font-weight:700;font-size:14px;padding:0;max-width:140px;color:var(--ink);cursor:pointer}
-.fsel.on{border-color:var(--accent);background:var(--accent-soft)}
-.fsel.on span{color:var(--accent)}
-.daynav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
+.subbar{display:flex;flex-direction:column;gap:8px;padding-bottom:10px}
+.subbar .filters{margin:0;padding-bottom:2px}
+.daynav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.daynav button.all{justify-content:center}
 .daynav button.active{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .daynav button.active small,.daynav button.active.today small:first-child{color:inherit;opacity:.85}
 .daynav button{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:72px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;font-variant-numeric:tabular-nums;line-height:1.2}
@@ -281,8 +278,8 @@ window.FIREBASE_CONFIG = {
       <a href="#lich-su" data-tab="lich-su">Lịch sử</a>
     </nav>
     <div class="subbar" id="subbar" hidden>
-      <label class="fsel" id="fsel"><span>Xem lịch của</span><select id="flt" aria-label="Lọc theo người"></select></label>
-      <div class="daynav" id="daynav" role="group" aria-label="Chuyển nhanh đến ngày"></div>
+      <div class="daynav" id="daynav" role="group" aria-label="Lọc theo ngày"></div>
+      <div class="filters" id="pfilter" role="group" aria-label="Lọc theo người"></div>
     </div>
   </div>
 </header>
@@ -320,7 +317,7 @@ const IC={
 /* ---------- state ---------- */
 const S={db:null,user:null,uid:null,isOwner:false,readOnly:false,writeUnknown:false,
   trip:null,tripLoaded:false,members:{},membersLoaded:false,acts:{},actsLoaded:false,history:[],historyLoaded:false,
-  tab:"ngay",filter:"all",people:{},peopleLoaded:false,editCode:"",notConfigured:false,confirmed:false,stale:false,subError:"",dbMissing:false,booting:true};
+  tab:"ngay",filter:"all",day:"all",people:{},peopleLoaded:false,editCode:"",notConfigured:false,confirmed:false,stale:false,subError:"",dbMissing:false,booting:true};
 
 /* ---------- helpers ---------- */
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -384,7 +381,6 @@ function render(){
   const gb2=main.querySelector(".grid-box");if(gb2)gb2.scrollLeft=gl;
   const fl2=main.querySelector(".filters");if(fl2)fl2.scrollLeft=fs;
   $("fab").hidden=!(ready()&&S.trip&&!S.readOnly&&S.tab!=="lich-su");
-  spy();
 }
 function ready(){return !S.dbMissing&&S.tripLoaded&&S.membersLoaded&&S.actsLoaded}
 function renderHeader(){
@@ -425,37 +421,21 @@ function renderBody(){
 }
 function durText(m){if(m<=0)return"";const h=Math.floor(m/60),mm=m%60;return (h?h+" giờ":"")+(h&&mm?" ":"")+(mm?mm+" phút":"")}
 function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()}
-let spyRaf=0;
-function spy(){
-  const nav=$("daynav");if(!nav||$("subbar").hidden)return;
-  const hh=(document.querySelector("header.top")||{}).offsetHeight||0;
-  const secs=[...document.querySelectorAll("section.day[id^='d-']")];if(!secs.length)return;
-  let cur=secs[0];
-  const atBottom=window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4;
-  if(atBottom)cur=secs[secs.length-1];
-  else secs.forEach(s=>{if(s.getBoundingClientRect().top<=hh+40)cur=s});
-  const d=cur.id.slice(2);
-  nav.querySelectorAll("button").forEach(b=>{
-    const on=b.dataset.date===d;
-    if(on&&!b.classList.contains("active")){const l=b.offsetLeft-nav.offsetLeft,r=l+b.offsetWidth;if(l<nav.scrollLeft||r>nav.scrollLeft+nav.clientWidth)nav.scrollLeft=l-8}
-    b.classList.toggle("active",on);b.setAttribute("aria-current",on?"true":"false");
-  });
-}
-window.addEventListener("scroll",()=>{if(!spyRaf)spyRaf=requestAnimationFrame(()=>{spyRaf=0;spy()})},{passive:true});
-window.addEventListener("resize",()=>{const hd=document.querySelector("header.top");if(hd)document.documentElement.style.setProperty("--hh",hd.offsetHeight+"px");spy()});
-let fltSig="";
+window.addEventListener("resize",()=>{const hd=document.querySelector("header.top");if(hd)document.documentElement.style.setProperty("--hh",hd.offsetHeight+"px")});
 function renderDayNav(){
   const nav=$("daynav");
   const show=!!(ready()&&S.trip&&S.tab==="ngay");
   $("subbar").hidden=!show;if(!show){nav.innerHTML="";return}
-  const sig=MIDS.map(mName).join("|");
-  const sel=$("flt");
-  if(sig!==fltSig){fltSig=sig;sel.innerHTML=`<option value="all">Cả đoàn</option>`+MIDS.map(id=>`<option value="${id}">${esc(mName(id))}</option>`).join("")}
-  if(sel.value!==S.filter)sel.value=S.filter;
-  $("fsel").classList.toggle("on",S.filter!=="all");
+  const pf=$("pfilter");const ps=pf.scrollLeft;
+  pf.innerHTML=`<button class="chip plain" data-act="filter" data-id="all" aria-pressed="${S.filter==="all"}">Cả đoàn</button>`+MIDS.map(id=>`<button class="chip" data-act="filter" data-id="${id}" aria-pressed="${S.filter===id}">${av(id)}${esc(mName(id))}</button>`).join("");
+  pf.scrollLeft=ps;
+  const days=tripDays();if(S.day!=="all"&&!days.includes(S.day))S.day="all";
   const today=isoD(new Date());
   const list=actList().filter(a=>S.filter==="all"||validPeople(a.people).includes(S.filter));
-  nav.innerHTML=tripDays().map((d,i)=>{const n=list.filter(a=>a.date===d).length;return `<button type="button" data-act="goto" data-date="${d}" class="${d===today?"today":""}"><small>${d===today?"Hôm nay":"Ngày "+(i+1)}</small><b>${WDS[parseD(d).getDay()]} ${esc(fmtDS(d))}</b><small>${n} hoạt động</small></button>`}).join("");
+  const ns=nav.scrollLeft;
+  nav.innerHTML=`<button type="button" data-act="goto" data-date="all" class="all${S.day==="all"?" active":""}" aria-pressed="${S.day==="all"}"><small>Cả chuyến</small><b>Tất cả</b><small>${list.length} hoạt động</small></button>`+
+    days.map((d,i)=>{const n=list.filter(a=>a.date===d).length;const on=S.day===d;return `<button type="button" data-act="goto" data-date="${d}" class="${d===today?"today":""}${on?" active":""}" aria-pressed="${on}"><small>${d===today?"Hôm nay":"Ngày "+(i+1)}</small><b>${WDS[parseD(d).getDay()]} ${esc(fmtDS(d))}</b><small>${n} hoạt động</small></button>`}).join("");
+  nav.scrollLeft=ns;
 }
 function timelineHtml(items,conf,d,dayNo){
   const today=isoD(new Date());const isToday=d===today;const nm=nowMin();
@@ -491,6 +471,7 @@ function renderDays(){
   const nConf=Object.keys(conf).filter(id=>S.filter==="all"||(S.acts[id]&&validPeople(S.acts[id].people).includes(S.filter))).length;
   if(nConf)h+=`<div class="banner err"><span>${IC.warn.replace("<svg",'<svg style="width:16px;height:16px;vertical-align:-3px;margin-right:6px"')}Có ${nConf} hoạt động bị trùng giờ. Chúng được viền đỏ bên dưới.</span></div>`;
   days.forEach((d,i)=>{
+    if(S.day!=="all"&&S.day!==d)return;
     const items=sortActs(list.filter(a=>a.date===d));
     const timed=items.filter(a=>isTime(a.start));
     const span=timed.length?` · ${timed[0].start} – ${timed.reduce((m,a)=>{const e=a.end||a.start;return e>m?e:m},"")}`:"";
@@ -501,7 +482,7 @@ function renderDays(){
     h+=`</section>`;
   });
   const out=sortActs(list.filter(a=>!days.includes(a.date)));
-  if(out.length){h+=`<section class="day"><div class="day-head"><div class="day-num"><small>Ngoài</small><b>?</b></div><div class="day-title"><h2>Ngoài lịch trình</h2><div class="sub">Ngày nằm ngoài ngày đi – ngày về. Hãy sửa lại ngày.</div></div></div><div class="tl">${out.map(a=>rowHtml(a,conf[a.id],{showDate:true})).join("")}</div></section>`}
+  if(out.length&&S.day==="all"){h+=`<section class="day"><div class="day-head"><div class="day-num"><small>Ngoài</small><b>?</b></div><div class="day-title"><h2>Ngoài lịch trình</h2><div class="sub">Ngày nằm ngoài ngày đi – ngày về. Hãy sửa lại ngày.</div></div></div><div class="tl">${out.map(a=>rowHtml(a,conf[a.id],{showDate:true})).join("")}</div></section>`}
   return h;
 }
 function rowHtml(a,conf,o){
@@ -811,7 +792,7 @@ document.addEventListener("click",e=>{
     case"close":closeModal();break;
     case"filter":S.filter=el.dataset.id;render();break;
     case"add":if(!S.readOnly&&S.trip)openModal(actForm(null,el.dataset.date,el.dataset.start,el.dataset.end));break;
-    case"goto":{const sec=$("d-"+el.dataset.date);if(sec)sec.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});break}
+    case"goto":S.day=el.dataset.date||"all";render();window.scrollTo({top:0});break;
     case"edit":{const a=S.acts[el.dataset.id];if(a&&canModify(a))openModal(actForm(a));break}
     case"del":{const a=S.acts[el.dataset.id];if(a&&canModify(a))openDelete(a.id);break}
     case"del-confirm":if(el.dataset.step==="1"){el.dataset.step="2";el.classList.add("armed");el.innerHTML=IC.trash+"Bấm lần nữa để xóa hẳn"}else doDelete(el.dataset.id,el);break;
@@ -835,7 +816,6 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   if(e.target.name==="f-people")syncAllBtn();
   if(e.target.id==="copy-who")$("copy-text").value=buildText(e.target.value);
-  if(e.target.id==="flt"){S.filter=e.target.value;render();window.scrollTo({top:0})}
 });
 document.addEventListener("submit",e=>{
   e.preventDefault();
