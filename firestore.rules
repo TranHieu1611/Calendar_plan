@@ -45,10 +45,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // "Tôi là ai": mỗi máy chỉ sửa được dòng của chính mình.
+    // "Tôi là ai": mỗi máy chỉ sửa được dòng của chính mình; quản trị viên gỡ được tên của máy khác.
     match /people/{uid} {
       allow read: if true;
       allow write: if isEditor() && request.auth.uid == uid;
+      allow delete: if isAdmin();
     }
 
     // Dữ liệu chuyến đi: ai có link đều đọc được, chỉ người được sửa mới ghi được.

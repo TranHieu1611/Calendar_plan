@@ -242,6 +242,19 @@ textarea.in{min-height:70px;resize:vertical}
 .me-chip .av{margin:0;border:0}
 .role{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--ink);color:var(--bg)}
 .role.ed{background:var(--accent-soft);color:var(--accent)}
+.chip .nm{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
+.chip .nm small{font-size:11px;color:var(--muted);font-weight:500}
+.chip.taken{border-style:dashed}
+.chip:disabled{opacity:.55;cursor:not-allowed}
+.peoplepick label.taken{cursor:not-allowed;opacity:.55}
+.btn.del.armed{background:var(--danger);color:var(--surface);border-color:var(--danger)}
+.mlist{display:flex;flex-direction:column;gap:8px}
+.mrow{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)}
+.mrow-b{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.mrow-b .hint{font-size:13px}
+.dev{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted)}
+.dev b{color:var(--ink)}
+.dev-btns{display:flex;gap:6px;flex-wrap:wrap}
 .who-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .who-grid .chip{justify-content:flex-start;padding:8px 12px 8px 8px;border-radius:10px}
 .linkbox{display:flex;gap:6px}
@@ -398,7 +411,7 @@ function renderHeader(){
   $("top-actions").innerHTML=`<button class="btn" data-act="copy">${IC.copy}<span class="lbl">Sao chép lịch</span></button>
   <button class="btn" data-act="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span class="lbl">Chia sẻ</span></button>
   ${S.readOnly?"":`<button class="btn" data-act="trip">${IC.cog}<span class="lbl">Chuyến đi & thành viên</span></button>`}
-  ${S.isAdmin?`<button class="btn${pendingReqs().length?" primary":""}" data-act="requests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></svg><span class="lbl">Yêu cầu sửa</span>${pendingReqs().length?` <b>${pendingReqs().length}</b>`:""}</button>`:""}`;
+  ${S.isAdmin?`<button class="btn${pendingReqs().length?" primary":""}" data-act="requests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></svg><span class="lbl">Quyền sửa</span>${pendingReqs().length?` <b>${pendingReqs().length}</b>`:""}</button>`:""}`;
 }
 function banners(){
   let h="";
@@ -820,6 +833,8 @@ document.addEventListener("click",e=>{
     case"requests":openRequests();break;
     case"approve":decide(el.dataset.id,true,el);break;
     case"reject":decide(el.dataset.id,false,el);break;
+    case"unclaim":unclaim(el.dataset.id,el);break;
+    case"revoke":revoke(el.dataset.id,el);break;
     case"copy-link":{const inp=$(el.dataset.for);const txt=inp.value;const fb=()=>{inp.focus();inp.select();toast("Đã chọn sẵn link, hãy nhấn giữ và chọn Sao chép.")};try{navigator.clipboard.writeText(txt).then(()=>toast("Đã sao chép link."),fb)}catch(_){fb()}break}
     case"pick-all":{const boxes=[...document.querySelectorAll('input[name="f-people"]')];const all=boxes.every(b=>b.checked);boxes.forEach(b=>b.checked=!all);syncAllBtn();break}
     case"do-copy":{
@@ -845,14 +860,23 @@ function route(){const h=(location.hash||"").slice(1);S.tab=["ngay","nguoi","lic
 window.addEventListener("hashchange",route);
 
 /* ---------- who am I / share ---------- */
+/* Tên đã có máy khác chọn (lưu trong people/{uid}) */
+function takenBy(mid){return Object.keys(S.people).filter(u=>u!==S.uid&&S.people[u]&&S.people[u].memberId===mid)}
+function isTaken(mid){return takenBy(mid).length>0}
 function openWho(){
   const cur=S.people[S.uid]&&S.people[S.uid].memberId;
+  const anyTaken=MIDS.some(id=>id!==cur&&isTaken(id));
   openModal(`<h2>Bạn là ai trong đoàn?</h2><p class="hint" style="margin-top:-6px">Chọn một lần trên máy này. Tên bạn sẽ hiện ở "Thêm bởi…" và trong tab Lịch sử.</p>
-  <div class="who-grid">${MIDS.map(id=>`<button class="chip" data-act="pick-me" data-id="${id}" aria-pressed="${cur===id}">${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}</button>`).join("")}</div>
+  <div class="who-grid">${MIDS.map(id=>{const t=id!==cur&&isTaken(id);const lock=t&&!S.isAdmin;
+    return `<button class="chip${t?" taken":""}" data-act="pick-me" data-id="${id}" aria-pressed="${cur===id}"${lock?" disabled":""}>${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(id)+')"')}<span class="nm">${esc(mName(id))}${t?`<small>Đã có người chọn</small>`:""}</span></button>`}).join("")}</div>
+  ${anyTaken?`<p class="hint" style="margin:10px 0 0">Tên bị khóa là đã có máy khác chọn. Nếu đó là bạn trên máy khác hoặc ai đó chọn nhầm, nhờ trưởng đoàn gỡ tên trong mục "Thành viên & quyền".</p>`:""}
   <div class="mfoot"><button class="btn" data-act="close">Để sau</button></div>`);
 }
 async function pickMe(mid,btn){
-  if(!S.uid)return;btn.disabled=true;
+  if(!S.uid)return;
+  const cur=S.people[S.uid]&&S.people[S.uid].memberId;
+  if(mid!==cur&&isTaken(mid)&&!S.isAdmin){toast(mName(mid)+" đã có người chọn. Hãy chọn tên khác.",true);return}
+  btn.disabled=true;
   if(await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}))){closeModal();toast("Chào "+mName(mid)+"!")}
   else btn.disabled=false;
 }
@@ -890,15 +914,24 @@ let accessSubs=[];
 function watchAccess(){
   accessSubs.forEach(f=>f());accessSubs=[];
   if(S.isAdmin){
-    accessSubs.push(S.db.collection("requests").onSnapshot(q=>{S.requests=q.docs.map(d=>Object.assign({},d.data(),{id:d.id}));render()},()=>{}));
+    accessSubs.push(S.db.collection("requests").onSnapshot(q=>{S.requests=q.docs.map(d=>Object.assign({},d.data(),{id:d.id}));render();refreshAdminModal()},()=>{}));
+    accessSubs.push(S.db.collection("editors").onSnapshot(q=>{S.editors={};q.docs.forEach(d=>{S.editors[d.id]=d.data()});refreshAdminModal()},()=>{}));
+  }else if(!S.readOnly){
+    /* Người sửa: nếu quản trị viên thu hồi quyền thì về chế độ xem và quên mã đã lưu */
+    accessSubs.push(S.db.doc("editors/"+S.uid).onSnapshot(s=>{
+      if(s.exists||s.metadata.fromCache||S.readOnly||S.isAdmin)return;
+      S.readOnly=true;lsSet("lt-ma","");toast("Trưởng đoàn đã thu hồi quyền sửa trên máy này. Bạn đang ở chế độ chỉ xem.",true);
+      closeModal();watchAccess();render();
+    },()=>{}));
   }else if(S.readOnly){
     accessSubs.push(S.db.doc("requests/"+S.uid).onSnapshot(s=>{S.myReq=s.exists?s.data():null;render()},()=>{}));
     accessSubs.push(S.db.doc("editors/"+S.uid).onSnapshot(async s=>{
       if(!s.exists||!S.readOnly)return;
       S.readOnly=false;toast("Bạn đã được duyệt quyền sửa. Giờ bạn thêm và sửa lịch được rồi.");
       const mid=S.myReq&&S.myReq.memberId;
-      if(mid&&!S.people[S.uid])await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
+      if(mid&&!S.people[S.uid]&&!isTaken(mid))await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
       watchAccess();render();
+      if(!S.people[S.uid])setTimeout(openWho,600);
     },()=>{}));
   }
 }
@@ -923,7 +956,7 @@ function openRequest(){
   openModal(`<h2>Xin quyền sửa</h2><p class="hint" style="margin-top:-6px">Trưởng đoàn sẽ thấy yêu cầu này và bấm duyệt. Trang tự chuyển sang chế độ sửa khi được duyệt.</p>
   <form id="req-form" novalidate><div class="fields">
   <div style="display:flex;flex-direction:column;gap:6px"><span class="f" style="display:block">Bạn là ai? <span class="req" aria-hidden="true">*</span></span>
-  <div class="peoplepick">${MIDS.map(id=>`<label><input type="radio" name="r-who" value="${id}"${cur===id?" checked":""}><span class="pc">${av(id).replace('class="av"','class="av" style="margin:0;border:0;width:22px;height:22px;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}</span></label>`).join("")}</div>
+  <div class="peoplepick">${MIDS.map(id=>{const t=isTaken(id);return `<label${t?' class="taken" title="Đã có người chọn"':""}><input type="radio" name="r-who" value="${id}"${cur===id&&!t?" checked":""}${t?" disabled":""}><span class="pc">${av(id).replace('class="av"','class="av" style="margin:0;border:0;width:22px;height:22px;--c:var(--p'+mIdx(id)+')"')}${esc(mName(id))}${t?" · đã có người chọn":""}</span></label>`}).join("")}</div>
   <div class="ferr" id="e-who" hidden></div></div>
   <label class="f">Lời nhắn (không bắt buộc)<textarea class="in" id="r-note" maxlength="300" placeholder="Ví dụ: Em muốn thêm lịch ăn tối ngày 2"></textarea></label>
   </div><div class="mfoot"><button type="button" class="btn" data-act="close">Hủy</button><button type="submit" class="btn primary" id="r-save">Gửi yêu cầu</button></div></form>`);
@@ -931,21 +964,54 @@ function openRequest(){
 async function submitRequest(){
   const who=(document.querySelector('input[name="r-who"]:checked')||{}).value;
   showErr("e-who",who?"":"Hãy chọn tên của bạn.");if(!who)return;
+  if(isTaken(who)){showErr("e-who",mName(who)+" đã có người chọn. Hãy chọn tên khác.");return}
   const btn=$("r-save");btn.disabled=true;
   try{await S.db.doc("requests/"+S.uid).set({memberId:who,note:$("r-note").value.trim(),at:Date.now(),status:"pending"});closeModal();toast("Đã gửi yêu cầu. Chờ trưởng đoàn duyệt nhé.")}
   catch(e){btn.disabled=false;toast("Không gửi được yêu cầu. Kiểm tra mạng rồi thử lại.",true)}
 }
-function openRequests(){
+/* Mỗi máy: vào bằng cách nào (mã / được duyệt / quản trị) */
+function deviceInfo(uid){
+  if(uid===S.uid&&S.isAdmin)return{role:"Quản trị",how:"nhập mã quản trị"};
+  const e=(S.editors||{})[uid];
+  if(!e)return{role:"Chỉ xem",how:"chưa có quyền sửa"};
+  return{role:"Được sửa",how:e.approvedBy?"được duyệt lúc "+fmtTs(e.at):"nhập mã sửa lúc "+fmtTs(e.at)};
+}
+function adminModalHtml(){
   const all=(S.requests||[]).slice().sort((a,b)=>(b.at||0)-(a.at||0));
-  const pend=all.filter(r=>r.status==="pending"),done=all.filter(r=>r.status!=="pending").slice(0,10);
-  const row=r=>`<div class="hitem"><div class="hline">${MIDS.includes(r.memberId)?av(r.memberId):""}<strong>${esc(MIDS.includes(r.memberId)?mName(r.memberId):"Không rõ tên")}</strong><span class="ht">${esc(fmtTs(r.at))}</span>
+  const pend=all.filter(r=>r.status==="pending"),done=all.filter(r=>r.status!=="pending").slice(0,8);
+  const row=r=>{const nameTaken=MIDS.includes(r.memberId)&&takenBy(r.memberId).some(u=>u!==r.id);
+    return `<div class="hitem"><div class="hline">${MIDS.includes(r.memberId)?av(r.memberId):""}<strong>${esc(MIDS.includes(r.memberId)?mName(r.memberId):"Không rõ tên")}</strong><span class="ht">${esc(fmtTs(r.at))}</span>
     ${r.status==="approved"?`<span class="kind add">Đã duyệt</span>`:r.status==="rejected"?`<span class="kind delete">Đã từ chối</span>`:""}</div>
     ${r.note?`<div class="note">${esc(r.note)}</div>`:""}
-    ${r.status==="pending"?`<div style="display:flex;gap:8px;margin-top:8px"><button class="btn primary sm" data-act="approve" data-id="${esc(r.id)}">Duyệt</button><button class="btn sm del" data-act="reject" data-id="${esc(r.id)}">Từ chối</button></div>`:""}</div>`;
-  openModal(`<h2>Yêu cầu quyền sửa</h2>
-  ${pend.length?pend.map(row).join(""):`<p class="hint">Không có yêu cầu nào đang chờ.</p>`}
-  ${done.length?`<h3 class="eyebrow" style="margin:16px 0 8px">Đã xử lý gần đây</h3>${done.map(row).join("")}`:""}
-  <div class="mfoot"><button class="btn" data-act="close">Đóng</button></div>`);
+    ${r.status==="pending"&&nameTaken?`<div class="alert">${IC.warn}<span>Tên này đã có máy khác chọn. Nếu duyệt, người này sẽ phải chọn tên khác, hoặc bạn gỡ tên ở máy kia trước.</span></div>`:""}
+    ${r.status==="pending"?`<div style="display:flex;gap:8px;margin-top:8px"><button class="btn primary sm" data-act="approve" data-id="${esc(r.id)}">Duyệt</button><button class="btn sm del" data-act="reject" data-id="${esc(r.id)}">Từ chối</button></div>`:""}</div>`};
+  const members=MIDS.map(mid=>{
+    const uids=Object.keys(S.people).filter(u=>S.people[u]&&S.people[u].memberId===mid);
+    const devs=uids.map(u=>{const d=deviceInfo(u);const me=u===S.uid;
+      return `<div class="dev"><span><b>${me?"Máy này (bạn)":"Một máy"}</b> · <span class="kind ${d.role==="Chỉ xem"?"":"add"}">${esc(d.role)}</span> · chọn tên lúc ${esc(fmtTs(S.people[u].at))} · ${esc(d.how)}</span>
+      ${me?"":`<span class="dev-btns"><button class="btn sm" data-act="unclaim" data-id="${esc(u)}">Gỡ tên</button>${(S.editors||{})[u]?`<button class="btn sm del" data-act="revoke" data-id="${esc(u)}">Thu hồi quyền sửa</button>`:""}</span>`}</div>`}).join("");
+    return `<div class="mrow">${av(mid).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(mid)+')"')}<div class="mrow-b"><strong>${esc(mName(mid))}</strong>${devs||`<div class="hint">Chưa có ai chọn tên này</div>`}</div></div>`}).join("");
+  const noName=Object.keys(S.editors||{}).filter(u=>u!==S.uid&&!(S.people[u]&&MIDS.includes(S.people[u].memberId)));
+  return `<h2>Thành viên & quyền</h2>
+  <h3 class="eyebrow" style="margin:0 0 8px">Yêu cầu đang chờ</h3>
+  ${pend.length?pend.map(row).join(""):`<p class="hint" style="margin:0 0 8px">Không có yêu cầu nào đang chờ.</p>`}
+  <h3 class="eyebrow" style="margin:18px 0 8px">Ai đang dùng tên nào</h3>
+  <div class="mlist">${members}</div>
+  ${noName.length?`<p class="hint" style="margin:10px 0 0">Còn ${noName.length} máy có quyền sửa nhưng chưa chọn tên. ${noName.map(u=>`<button class="btn sm del" data-act="revoke" data-id="${esc(u)}">Thu hồi 1 máy (${esc(deviceInfo(u).how)})</button>`).join(" ")}</p>`:""}
+  <p class="hint" style="margin:12px 0 0">Gỡ tên: máy đó phải chọn lại tên, tên được giải phóng cho người khác. Thu hồi quyền sửa: máy đó trở về chỉ xem và quên mã đã lưu. Người đó vẫn nhập lại được nếu còn nhớ mã sửa; muốn chặn hẳn thì đổi mã sửa trong Firebase.</p>
+  ${done.length?`<h3 class="eyebrow" style="margin:18px 0 8px">Yêu cầu đã xử lý gần đây</h3>${done.map(row).join("")}`:""}
+  <div class="mfoot"><button class="btn" data-act="close">Đóng</button></div>`;
+}
+function openRequests(){openModal(`<div id="admin-modal">${adminModalHtml()}</div>`)}
+function refreshAdminModal(){const m=$("admin-modal");if(m){const sc=m.closest(".modal");const t=sc?sc.scrollTop:0;m.innerHTML=adminModalHtml();if(sc)sc.scrollTop=t}}
+async function unclaim(uid,btn){
+  btn.disabled=true;
+  if(await run(()=>S.db.doc("people/"+uid).delete()))toast("Đã gỡ tên. Máy đó sẽ phải chọn lại tên.");else btn.disabled=false;
+}
+async function revoke(uid,btn){
+  if(btn.dataset.step!=="2"){btn.dataset.step="2";btn.textContent="Bấm lần nữa để thu hồi";btn.classList.add("armed");return}
+  btn.disabled=true;
+  if(await run(()=>S.db.doc("editors/"+uid).delete()))toast("Đã thu hồi quyền sửa của máy đó.");else btn.disabled=false;
 }
 async function decide(id,ok,btn){
   const r=(S.requests||[]).find(x=>x.id===id);if(!r)return;btn.disabled=true;
@@ -1033,7 +1099,7 @@ async function boot(){
   const timer=setTimeout(()=>{if(!S.confirmed){S.stale=true;render()}},10000);
   const confirm=m=>{if(!m.fromCache&&!S.confirmed){S.confirmed=true;S.stale=false;clearTimeout(timer)}};
   let askedWho=false;
-  db.collection("people").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.people=m;S.peopleLoaded=true;render();
+  db.collection("people").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.people=m;S.peopleLoaded=true;render();refreshAdminModal();
     if(!askedWho&&!S.readOnly&&!q.metadata.fromCache&&!m[S.uid]){askedWho=true;setTimeout(()=>{if(!$("modal-root").firstChild&&!S.people[S.uid])openWho()},800)}},subErr);
   db.doc("trip/info").onSnapshot(s=>{S.trip=s.exists?s.data():null;S.tripLoaded=true;confirm(s.metadata);render()},subErr);
   db.collection("members").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.members=m;S.membersLoaded=true;confirm(q.metadata);render()},subErr);
