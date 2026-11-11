@@ -80,7 +80,15 @@ main{padding-block:16px 120px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 
 /* Day navigator (in sticky header) */
-.daynav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px}
+.subbar{display:flex;gap:8px;align-items:stretch;padding-bottom:10px}
+.fsel{flex:none;display:flex;flex-direction:column;justify-content:center;gap:1px;border:1.5px solid var(--line);border-radius:10px;padding:4px 10px;background:var(--surface);cursor:pointer}
+.fsel span{font-size:11px;color:var(--muted);font-weight:500}
+.fsel select{border:0;background:transparent;font-weight:700;font-size:14px;padding:0;max-width:140px;color:var(--ink);cursor:pointer}
+.fsel.on{border-color:var(--accent);background:var(--accent-soft)}
+.fsel.on span{color:var(--accent)}
+.daynav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
+.daynav button.active{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.daynav button.active small,.daynav button.active.today small:first-child{color:inherit;opacity:.85}
 .daynav button{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:72px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;font-variant-numeric:tabular-nums;line-height:1.2}
 .daynav button:hover{border-color:var(--accent)}
 .daynav small{font-size:11px;color:var(--muted);font-weight:500}
@@ -272,7 +280,10 @@ window.FIREBASE_CONFIG = {
       <a href="#nguoi" data-tab="nguoi">Theo người</a>
       <a href="#lich-su" data-tab="lich-su">Lịch sử</a>
     </nav>
-    <div class="daynav" id="daynav" role="group" aria-label="Chuyển nhanh đến ngày" hidden></div>
+    <div class="subbar" id="subbar" hidden>
+      <label class="fsel" id="fsel"><span>Xem lịch của</span><select id="flt" aria-label="Lọc theo người"></select></label>
+      <div class="daynav" id="daynav" role="group" aria-label="Chuyển nhanh đến ngày"></div>
+    </div>
   </div>
 </header>
 <main class="wrap" id="main" aria-live="polite"></main>
@@ -373,6 +384,7 @@ function render(){
   const gb2=main.querySelector(".grid-box");if(gb2)gb2.scrollLeft=gl;
   const fl2=main.querySelector(".filters");if(fl2)fl2.scrollLeft=fs;
   $("fab").hidden=!(ready()&&S.trip&&!S.readOnly&&S.tab!=="lich-su");
+  spy();
 }
 function ready(){return !S.dbMissing&&S.tripLoaded&&S.membersLoaded&&S.actsLoaded}
 function renderHeader(){
@@ -413,10 +425,34 @@ function renderBody(){
 }
 function durText(m){if(m<=0)return"";const h=Math.floor(m/60),mm=m%60;return (h?h+" giờ":"")+(h&&mm?" ":"")+(mm?mm+" phút":"")}
 function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()}
+let spyRaf=0;
+function spy(){
+  const nav=$("daynav");if(!nav||$("subbar").hidden)return;
+  const hh=(document.querySelector("header.top")||{}).offsetHeight||0;
+  const secs=[...document.querySelectorAll("section.day[id^='d-']")];if(!secs.length)return;
+  let cur=secs[0];
+  const atBottom=window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4;
+  if(atBottom)cur=secs[secs.length-1];
+  else secs.forEach(s=>{if(s.getBoundingClientRect().top<=hh+40)cur=s});
+  const d=cur.id.slice(2);
+  nav.querySelectorAll("button").forEach(b=>{
+    const on=b.dataset.date===d;
+    if(on&&!b.classList.contains("active")){const l=b.offsetLeft-nav.offsetLeft,r=l+b.offsetWidth;if(l<nav.scrollLeft||r>nav.scrollLeft+nav.clientWidth)nav.scrollLeft=l-8}
+    b.classList.toggle("active",on);b.setAttribute("aria-current",on?"true":"false");
+  });
+}
+window.addEventListener("scroll",()=>{if(!spyRaf)spyRaf=requestAnimationFrame(()=>{spyRaf=0;spy()})},{passive:true});
+window.addEventListener("resize",()=>{const hd=document.querySelector("header.top");if(hd)document.documentElement.style.setProperty("--hh",hd.offsetHeight+"px");spy()});
+let fltSig="";
 function renderDayNav(){
   const nav=$("daynav");
-  const show=ready()&&S.trip&&S.tab==="ngay";
-  nav.hidden=!show;if(!show){nav.innerHTML="";return}
+  const show=!!(ready()&&S.trip&&S.tab==="ngay");
+  $("subbar").hidden=!show;if(!show){nav.innerHTML="";return}
+  const sig=MIDS.map(mName).join("|");
+  const sel=$("flt");
+  if(sig!==fltSig){fltSig=sig;sel.innerHTML=`<option value="all">Cả đoàn</option>`+MIDS.map(id=>`<option value="${id}">${esc(mName(id))}</option>`).join("")}
+  if(sel.value!==S.filter)sel.value=S.filter;
+  $("fsel").classList.toggle("on",S.filter!=="all");
   const today=isoD(new Date());
   const list=actList().filter(a=>S.filter==="all"||validPeople(a.people).includes(S.filter));
   nav.innerHTML=tripDays().map((d,i)=>{const n=list.filter(a=>a.date===d).length;return `<button type="button" data-act="goto" data-date="${d}" class="${d===today?"today":""}"><small>${d===today?"Hôm nay":"Ngày "+(i+1)}</small><b>${WDS[parseD(d).getDay()]} ${esc(fmtDS(d))}</b><small>${n} hoạt động</small></button>`}).join("");
@@ -449,9 +485,8 @@ function renderDays(){
   const conf=computeConflicts();
   const days=tripDays();
   const today=isoD(new Date());
-  let h=`<div class="filters" role="group" aria-label="Lọc theo người"><button class="chip plain" data-act="filter" data-id="all" aria-pressed="${S.filter==="all"}">Cả đoàn</button>`;
-  MIDS.forEach(id=>{h+=`<button class="chip" data-act="filter" data-id="${id}" aria-pressed="${S.filter===id}">${av(id)}${esc(mName(id))}</button>`});
-  h+=`</div>`;
+  let h="";
+  if(S.filter!=="all")h+=`<div class="banner info"><span>${av(S.filter)} Đang xem lịch của <b>${esc(mName(S.filter))}</b>. Ô gạch đứt là lúc ${esc(mName(S.filter))} còn rảnh.</span><button class="btn" data-act="filter" data-id="all">Xem cả đoàn</button></div>`;
   const list=actList().filter(a=>S.filter==="all"||validPeople(a.people).includes(S.filter));
   const nConf=Object.keys(conf).filter(id=>S.filter==="all"||(S.acts[id]&&validPeople(S.acts[id].people).includes(S.filter))).length;
   if(nConf)h+=`<div class="banner err"><span>${IC.warn.replace("<svg",'<svg style="width:16px;height:16px;vertical-align:-3px;margin-right:6px"')}Có ${nConf} hoạt động bị trùng giờ. Chúng được viền đỏ bên dưới.</span></div>`;
@@ -800,6 +835,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   if(e.target.name==="f-people")syncAllBtn();
   if(e.target.id==="copy-who")$("copy-text").value=buildText(e.target.value);
+  if(e.target.id==="flt"){S.filter=e.target.value;render();window.scrollTo({top:0})}
 });
 document.addEventListener("submit",e=>{
   e.preventDefault();
