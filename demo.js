@@ -32,6 +32,7 @@
   /* Giả lập phần luật bảo mật liên quan tới mã */
   function allowed(p, d) {
     var parts = p.split("/");
+    if (parts[0] === "checks") return parts[1] === uid && ((d.kind === "edit" && d.code === CODES.edit) || (d.kind === "admin" && d.code === CODES.admin));
     if (parts[0] === "admins") return parts[1] === uid && d.code === CODES.admin && !store.has(p);
     if (parts[0] === "editors") {
       if (d.approvedBy) return store.has("admins/" + uid);

@@ -15,6 +15,14 @@ service cloud.firestore {
       return signedIn() && (isAdmin() || exists(/databases/$(database)/documents/editors/$(request.auth.uid)));
     }
 
+    // Kiểm tra mã mỗi lần đăng nhập: ghi được nghĩa là mã đúng. Không ai đọc được mục này.
+    match /checks/{uid} {
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['kind', 'code', 'at'])
+        && ((request.resource.data.kind == 'edit' && request.resource.data.code == editCode())
+          || (request.resource.data.kind == 'admin' && request.resource.data.code == adminCode()));
+    }
+
     // Quản trị viên: tự thêm mình bằng mã quản trị.
     match /admins/{uid} {
       allow get: if signedIn() && request.auth.uid == uid;

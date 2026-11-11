@@ -242,6 +242,13 @@ textarea.in{min-height:70px;resize:vertical}
 .me-chip .av{margin:0;border:0}
 .role{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--ink);color:var(--bg)}
 .role.ed{background:var(--accent-soft);color:var(--accent)}
+.role.vw{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.gate-who label.chip{cursor:pointer;justify-content:flex-start;padding:8px 12px 8px 8px;border-radius:10px;position:relative}
+.gate-who input{position:absolute;opacity:0;pointer-events:none}
+.gate-who label.chip:has(input:checked){background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gate-who label.chip:has(input:checked) small{color:inherit}
+.gate-who label.chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.gate-who label.taken{cursor:not-allowed;opacity:.55}
 .chip .nm{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2}
 .chip .nm small{font-size:11px;color:var(--muted);font-weight:500}
 .chip.taken{border-style:dashed}
@@ -410,7 +417,8 @@ function renderHeader(){
   box.innerHTML=`<div class="eyebrow">${esc(t.destination||"Chưa có điểm đến")}</div><h1>${esc(t.name||"Chuyến đi chưa đặt tên")}</h1>
   <div class="trip-meta">${esc(fmtD(t.startDate))} → ${esc(fmtD(t.endDate))}${days?` · ${days} ngày`:""} · 8 thành viên</div>`;
   const meP=S.people[S.uid];
-  const meChip=S.readOnly?`<div class="me-chip">Chế độ chỉ xem · <button class="btn ghost" data-act="code" style="min-height:0;padding:2px 6px">Nhập mã sửa</button></div>`:`<div class="me-chip">${meP&&MIDS.includes(meP.memberId)?`${av(meP.memberId)}Bạn là <b>${esc(mName(meP.memberId))}</b>`:"Bạn chưa chọn tên"}${S.isAdmin?` <span class="role">Quản trị</span>`:` <span class="role ed">Được sửa</span>`} · <button class="btn ghost" data-act="whoami" style="min-height:0;padding:2px 6px">Đổi tên</button>${S.isAdmin?"":` · <button class="btn ghost" data-act="code" data-admin="1" style="min-height:0;padding:2px 6px">Nhập mã quản trị</button>`}</div>`;
+  const sm=(sessGet()||{}).mid;const vMid=S.readOnly?(MIDS.includes(sm)?sm:""):(meP&&MIDS.includes(meP.memberId)?meP.memberId:"");
+  const meChip=`<div class="me-chip">${vMid?`${av(vMid)}Bạn là <b>${esc(mName(vMid))}</b>`:S.readOnly?"":"Bạn chưa chọn tên"}${S.isAdmin?` <span class="role">Quản trị</span>`:S.readOnly?` <span class="role vw">Chỉ xem</span>`:` <span class="role ed">Được sửa</span>`} · <button class="btn ghost" data-act="logout" style="min-height:0;padding:2px 6px">${S.readOnly?"Đăng nhập để sửa":"Đổi người / thoát"}</button></div>`;
   box.insertAdjacentHTML("beforeend",meChip);
   $("top-actions").innerHTML=`<button class="btn" data-act="copy">${IC.copy}<span class="lbl">Sao chép lịch</span></button>
   <button class="btn" data-act="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span class="lbl">Chia sẻ</span></button>
@@ -426,8 +434,8 @@ function banners(){
   else if(S.stale)h+=`<div class="banner warn">Chưa kết nối được kho dữ liệu chung. Thông tin bên dưới có thể chưa mới nhất; trang sẽ tự cập nhật khi kết nối lại.</div>`;
   if(S.readOnly&&ready()&&S.uid){
     const st=S.myReq&&S.myReq.status;
-    const msg=st==="pending"?"Yêu cầu sửa của bạn đã gửi, đang chờ trưởng đoàn duyệt.":st==="rejected"?"Yêu cầu sửa trước đó chưa được duyệt. Bạn có thể gửi lại hoặc nhập mã.":"Bạn đang ở chế độ chỉ xem. Muốn thêm hoặc sửa lịch, hãy xin quyền sửa hoặc nhập mã sửa.";
-    h+=`<div class="banner${st==="pending"?" info":""}"><span>${esc(msg)}</span><span style="display:flex;gap:6px;flex-wrap:wrap">${st==="pending"?"":`<button class="btn primary" data-act="req">Xin quyền sửa</button>`}<button class="btn" data-act="code">Nhập mã sửa</button></span></div>`;
+    const msg=st==="pending"?"Yêu cầu sửa của bạn đã gửi, đang chờ trưởng đoàn duyệt.":st==="rejected"?"Yêu cầu sửa trước đó chưa được duyệt. Bạn có thể gửi lại hoặc đăng nhập bằng mã.":"Bạn đang ở chế độ chỉ xem. Muốn thêm hoặc sửa lịch, hãy đăng nhập bằng mã sửa hoặc xin quyền sửa.";
+    h+=`<div class="banner${st==="pending"?" info":""}"><span>${esc(msg)}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn primary" data-act="logout">Đăng nhập để sửa</button>${st==="pending"?"":`<button class="btn" data-act="req">Xin quyền sửa</button>`}</span></div>`;
   }
   if(S.isAdmin&&ready()){const n=pendingReqs().length;if(n)h+=`<div class="banner warn"><span><b>${n} yêu cầu xin quyền sửa</b> đang chờ bạn duyệt: ${esc(pendingReqs().map(r=>MIDS.includes(r.memberId)?mName(r.memberId):"Không rõ").join(", "))}.</span><button class="btn primary" data-act="requests">Xem và duyệt</button></div>`}
   if(ready()&&hasSample())h+=`<div class="banner info"><span>Đây là chuyến mẫu để xem thử. Xóa đi khi cả đoàn bắt đầu nhập lịch thật.</span>${S.readOnly?"":`<button class="btn" data-act="clear-sample">Xóa dữ liệu mẫu</button>`}</div>`;
@@ -647,6 +655,7 @@ function formState(){return [...$("modal-root").querySelectorAll("form input,for
 function isDirty(){return !!$("modal-root").querySelector("form")&&formState()!==modalInit}
 /* Đóng theo yêu cầu người dùng (Hủy, Esc, bấm nền tối): hỏi lại nếu đã nhập */
 function requestClose(){
+  if($("modal-root").querySelector("[data-gate]"))return; /* màn hình đăng nhập: chọn "Chỉ xem" hoặc "Vào để sửa" */
   if(!isDirty()){closeModal();return}
   const m=$("modal-root").querySelector(".modal");if(!m)return;
   if(m.querySelector(".discard-bar")){m.querySelector(".discard-bar [data-act='keep']").focus();return}
@@ -863,10 +872,11 @@ document.addEventListener("click",e=>{
     case"restore":doRestore(el.dataset.id,el);break;
     case"trip":if(!S.readOnly)openModal(tripForm());break;
     case"copy":openCopy();break;
-    case"whoami":openWho();break;
+    case"whoami":case"logout":logout();break;
+    case"gate-view":gateView();break;
     case"pick-me":pickMe(el.dataset.id,el);break;
     case"share":openShare();break;
-    case"code":openCode(el.dataset.admin==="1"||(!S.readOnly&&!S.isAdmin));break;
+    case"code":logout();break;
     case"req":openRequest();break;
     case"requests":openRequests();break;
     case"approve":decide(el.dataset.id,true,el);break;
@@ -890,7 +900,7 @@ document.addEventListener("submit",e=>{
   e.preventDefault();
   if(e.target.id==="act-form")saveAct(e.target);
   if(e.target.id==="trip-form")saveTrip();
-  if(e.target.id==="code-form")submitCode();
+  if(e.target.id==="gate-form")submitGate();
   if(e.target.id==="req-form")submitRequest();
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("modal-root").firstChild){e.preventDefault();requestClose()}});
@@ -921,76 +931,121 @@ async function pickMe(mid,btn){
 function baseUrl(){return location.origin+location.pathname}
 function openShare(){
   const view=baseUrl();
-  const ec=lsGet("lt-ma");
-  const edit=S.isAdmin&&ec?view+"?ma="+encodeURIComponent(ec):"";
   openModal(`<h2>Chia sẻ cho cả đoàn</h2><div class="fields">
-  <label class="f">Link xem (ai mở cũng chỉ xem được)<span class="linkbox"><input class="in" id="lk-view" readonly value="${esc(view)}"><button class="btn" data-act="copy-link" data-for="lk-view">${IC.copy}</button></span></label>
-  ${edit?`<label class="f">Link sửa (ai có link này đều thêm, sửa, xóa được)<span class="linkbox"><input class="in" id="lk-edit" readonly value="${esc(edit)}"><button class="btn" data-act="copy-link" data-for="lk-edit">${IC.copy}</button></span></label>
-  <p class="hint" style="margin:0">Chỉ gửi link sửa vào nhóm chat riêng của 8 người. Người có link sửa có thể chuyển tiếp cho người khác.</p>`:S.isAdmin?`<p class="hint" style="margin:0">Gửi link xem cho cả đoàn. Ai muốn sửa sẽ bấm "Xin quyền sửa" để bạn duyệt, hoặc nhập mã sửa bạn gửi riêng.</p>`:`<p class="hint" style="margin:0">Muốn sửa lịch, bấm "Xin quyền sửa" hoặc nhập mã sửa do trưởng đoàn gửi.</p>`}
+  <label class="f">Link của trang<span class="linkbox"><input class="in" id="lk-view" readonly value="${esc(view)}"><button class="btn" data-act="copy-link" data-for="lk-view">${IC.copy}</button></span></label>
+  <p class="hint" style="margin:0">Cả đoàn dùng chung link này. Mỗi lần mở, mọi người chọn tên của mình. Ai được sửa thì nhập mã sửa ${S.isAdmin?"bạn gửi riêng":"do trưởng đoàn gửi riêng"}; không có mã thì bấm "Chỉ xem".</p>
   </div><div class="mfoot"><button class="btn" data-act="close">Đóng</button></div>`);
 }
 
-/* ---------- quyền sửa: mã, yêu cầu, duyệt ---------- */
-async function loadAccess(){
-  try{const a=await S.db.doc("admins/"+S.uid).get();S.isAdmin=a.exists}catch(_){S.isAdmin=false}
-  if(!S.isAdmin){try{const e=await S.db.doc("editors/"+S.uid).get();if(e.exists)S.readOnly=false}catch(_){}}
-  if(S.isAdmin)S.readOnly=false;
-  S.isOwner=S.isAdmin;
+/* ---------- đăng nhập mỗi lần mở trang: chọn tên, nhập mã hoặc chỉ xem ---------- */
+/* Phiên lưu trong sessionStorage: tải lại trong cùng tab không phải nhập lại, mở tab mới thì đăng nhập lại */
+function sessKey(){return (S.demo?"demo:"+(S.uid||"")+":":"")+"lt-session"}
+function sessGet(){try{return JSON.parse(sessionStorage.getItem(sessKey())||"null")}catch(_){return null}}
+function sessSet(v){try{sessionStorage.setItem(sessKey(),JSON.stringify(v))}catch(_){}}
+function sessClear(){try{sessionStorage.removeItem(sessKey())}catch(_){}}
+/* Quyền đã cấp cho máy này trên máy chủ */
+async function loadServerAccess(){
+  const a={admin:false,editor:false,approved:false};
+  try{a.admin=(await S.db.doc("admins/"+S.uid).get()).exists}catch(_){}
+  try{const e=await S.db.doc("editors/"+S.uid).get();if(e.exists){a.editor=true;a.approved=!!(e.data()||{}).approvedBy}}catch(_){}
+  S.server=a;
 }
-/* Thử mã: mã quản trị trước, rồi mã sửa. Trả về "admin" | "editor" | "" */
-async function tryCode(code){
+/* Kiểm tra mã với luật bảo mật (mục checks). Trả về "admin" | "edit" | "" */
+async function verifyCode(code){
   code=String(code||"").trim();if(!code)return"";
-  if(!S.isAdmin){
-    try{await S.db.doc("admins/"+S.uid).set({code,at:Date.now()});S.isAdmin=true;S.isOwner=true;S.readOnly=false;lsSet("lt-admin",code);return"admin"}catch(_){}
-  }
-  if(S.readOnly){
-    try{await S.db.doc("editors/"+S.uid).set({code,at:Date.now()});S.readOnly=false;lsSet("lt-ma",code);return"editor"}catch(_){}
-  }
+  for(const kind of ["admin","edit"]){try{await S.db.doc("checks/"+S.uid).set({kind,code,at:Date.now()});return kind}catch(_){}}
   return"";
+}
+function applyRole(role){
+  S.role=role;
+  S.isAdmin=role==="admin";S.isOwner=S.isAdmin;S.readOnly=!(role==="admin"||role==="editor");
+  watchAccess();render();
+}
+function lastMid(){const p=S.people[S.uid];return (p&&MIDS.includes(p.memberId)&&p.memberId)||lsGet("lt-last-mid")||""}
+function openGate(prefill){
+  S.gateOpen=true;
+  const cur=lastMid();
+  const own=S.people[S.uid]&&S.people[S.uid].memberId;
+  const approved=S.server&&S.server.approved;
+  const chip=id=>{const t=id!==own&&isTaken(id);
+    return `<label class="chip${t?" taken":""}"${t?' title="Đã có người khác chọn"':""}><input type="radio" name="g-who" value="${id}"${cur===id&&!t?" checked":""}${t?" disabled":""}>${av(id).replace('class="av"','class="av" style="margin:0;border:0;--c:var(--p'+mIdx(id)+')"')}<span class="nm">${esc(mName(id))}${t?"<small>Đã có người chọn</small>":""}</span></label>`};
+  openModal(`<div data-gate="1"><h2>Bạn là ai trong đoàn?</h2>
+  <p class="hint" style="margin-top:-6px">Chọn tên của bạn, rồi nhập mã để sửa lịch. Không có mã thì bấm <b>Chỉ xem</b>.</p>
+  <form id="gate-form" novalidate><div class="fields">
+  <div class="who-grid gate-who" role="radiogroup" aria-label="Chọn tên">${MIDS.map(chip).join("")}</div>
+  <div class="ferr" id="e-gwho" hidden></div>
+  <label class="f">Mã sửa hoặc mã quản trị<input class="in" id="g-code" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(prefill||"")}" placeholder="${approved?"Máy này đã được duyệt, có thể để trống":"Nhập mã do trưởng đoàn gửi"}"></label>
+  ${approved?`<p class="hint" style="margin:0">Máy này đã được trưởng đoàn duyệt quyền sửa nên không cần mã.</p>`:""}
+  <div class="ferr" id="e-gcode" hidden></div>
+  </div><div class="mfoot"><button type="button" class="btn" data-act="gate-view">Chỉ xem</button><button type="submit" class="btn primary" id="g-save">Vào để sửa</button></div></form></div>`);
+  if(cur&&window.innerWidth>640)$("g-code").focus();
+}
+async function submitGate(){
+  const mid=(document.querySelector('input[name="g-who"]:checked')||{}).value||"";
+  const code=$("g-code").value.trim();
+  showErr("e-gwho",mid?"":"Hãy chọn tên của bạn.");showErr("e-gcode","",["g-code"]);
+  if(!mid)return;
+  const own=S.people[S.uid]&&S.people[S.uid].memberId;
+  if(mid!==own&&isTaken(mid)){showErr("e-gwho",mName(mid)+" đã có người khác chọn. Nếu đó là bạn trên máy khác, nhờ trưởng đoàn gỡ tên.");return}
+  const btn=$("g-save");btn.disabled=true;btn.textContent="Đang kiểm tra…";
+  let role="";
+  if(code){
+    const k=await verifyCode(code);
+    if(k==="admin"){if(!S.server.admin){try{await S.db.doc("admins/"+S.uid).set({code,at:Date.now()});S.server.admin=true}catch(_){}}role="admin"}
+    else if(k==="edit"){if(!S.server.editor){try{await S.db.doc("editors/"+S.uid).set({code,at:Date.now()});S.server.editor=true}catch(_){}}role="editor"}
+  }else if(S.server.approved)role="editor";
+  if(document.body.contains(btn)){btn.disabled=false;btn.textContent="Vào để sửa"}
+  if(!role){showErr("e-gcode",code?"Mã không đúng. Kiểm tra lại chữ hoa, chữ thường và dấu gạch ngang.":"Hãy nhập mã, hoặc bấm Chỉ xem.",["g-code"]);return}
+  lsSet("lt-last-mid",mid);
+  sessSet({role,mid});S.gateOpen=false;closeModal();applyRole(role);
+  if(own!==mid)await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
+  await seedIfEmpty();
+  toast(role==="admin"?"Chào "+mName(mid)+", bạn đang ở chế độ quản trị.":"Chào "+mName(mid)+", bạn sửa lịch được rồi.");
+}
+function gateView(){
+  const mid=(document.querySelector('input[name="g-who"]:checked')||{}).value||"";
+  if(mid)lsSet("lt-last-mid",mid);
+  sessSet({role:"view",mid});S.gateOpen=false;closeModal();applyRole("view");
+}
+function logout(){sessClear();applyRole("view");openGate()}
+/* Mở màn hình đăng nhập khi đã có danh sách tên */
+function maybeGate(){
+  if(!S.gatePending||!S.membersLoaded||!S.peopleLoaded||!S.server)return;
+  S.gatePending=false;
+  if($("modal-root").firstChild)closeModal();
+  openGate(S.prefillCode||"");
 }
 let accessSubs=[];
 function watchAccess(){
   accessSubs.forEach(f=>f());accessSubs=[];
+  if(!S.db||!S.uid||!S.server)return;
   if(S.isAdmin){
     accessSubs.push(S.db.collection("requests").onSnapshot(q=>{S.requests=q.docs.map(d=>Object.assign({},d.data(),{id:d.id}));render();refreshAdminModal()},()=>{}));
     accessSubs.push(S.db.collection("editors").onSnapshot(q=>{S.editors={};q.docs.forEach(d=>{S.editors[d.id]=d.data()});refreshAdminModal()},()=>{}));
   }else if(!S.readOnly){
-    /* Người sửa: nếu quản trị viên thu hồi quyền thì về chế độ xem và quên mã đã lưu */
+    /* Người sửa: nếu quản trị viên thu hồi quyền thì về chế độ xem */
     accessSubs.push(S.db.doc("editors/"+S.uid).onSnapshot(s=>{
       if(s.exists||s.metadata.fromCache||S.readOnly||S.isAdmin)return;
-      S.readOnly=true;lsSet("lt-ma","");toast("Trưởng đoàn đã thu hồi quyền sửa trên máy này. Bạn đang ở chế độ chỉ xem.",true);
-      closeModal();watchAccess();render();
+      S.server.editor=false;S.server.approved=false;sessSet({role:"view",mid:(sessGet()||{}).mid||""});
+      toast("Trưởng đoàn đã thu hồi quyền sửa trên máy này. Bạn đang ở chế độ chỉ xem.",true);
+      closeModal();applyRole("view");
     },()=>{}));
-  }else if(S.readOnly){
+  }else{
     accessSubs.push(S.db.doc("requests/"+S.uid).onSnapshot(s=>{S.myReq=s.exists?s.data():null;render()},()=>{}));
     accessSubs.push(S.db.doc("editors/"+S.uid).onSnapshot(async s=>{
       if(!s.exists||!S.readOnly)return;
-      S.readOnly=false;toast("Bạn đã được duyệt quyền sửa. Giờ bạn thêm và sửa lịch được rồi.");
-      const mid=S.myReq&&S.myReq.memberId;
-      if(mid&&!S.people[S.uid]&&!isTaken(mid))await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
-      watchAccess();render();
-      if(!S.people[S.uid])setTimeout(openWho,600);
+      const d=s.data()||{};const fresh=!S.server.approved&&!!d.approvedBy;
+      S.server.editor=true;S.server.approved=!!d.approvedBy;
+      if(!fresh||!S.myReq||S.myReq.status==="rejected")return;
+      const mid=S.myReq.memberId||"";
+      toast("Trưởng đoàn đã duyệt. Giờ bạn thêm và sửa lịch được rồi.");
+      if(mid&&!isTaken(mid)&&!(S.people[S.uid]&&S.people[S.uid].memberId===mid))await run(()=>S.db.doc("people/"+S.uid).set({memberId:mid,at:Date.now()}));
+      if(mid)lsSet("lt-last-mid",mid);
+      sessSet({role:"editor",mid});if(S.gateOpen){S.gateOpen=false;closeModal()}applyRole("editor");
     },()=>{}));
   }
 }
 function pendingReqs(){return (S.requests||[]).filter(r=>r.status==="pending").sort((a,b)=>(a.at||0)-(b.at||0))}
-function openCode(adminOnly){
-  openModal(`<h2>${adminOnly?"Nhập mã quản trị":"Nhập mã sửa"}</h2><form id="code-form" novalidate><div class="fields">
-  ${adminOnly?`<p class="hint" style="margin:-6px 0 0">Dành cho trưởng đoàn. Mã quản trị là mã <code>adminCode</code> bạn đặt trong luật bảo mật Firebase.</p>`:""}
-  <label class="f">${adminOnly?"Mã quản trị":"Mã do trưởng đoàn gửi"}<input class="in" id="c-code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${adminOnly?"Mã quản trị":"Ví dụ: dalat-xxxx"}"></label>
-  <div class="ferr" id="e-code" hidden></div></div>
-  <div class="mfoot"><button type="button" class="btn" data-act="close">Hủy</button><button type="submit" class="btn primary" id="c-save">Xác nhận</button></div></form>`);
-}
-async function submitCode(){
-  const btn=$("c-save");btn.disabled=true;
-  const wasEditor=!S.readOnly;
-  const r=await tryCode($("c-code").value);
-  btn.disabled=false;
-  if(!r){showErr("e-code",wasEditor?"Mã quản trị không đúng. Kiểm tra lại chữ hoa, chữ thường và dấu gạch ngang.":"Mã không đúng. Kiểm tra lại chữ hoa, chữ thường và dấu gạch ngang.",["c-code"]);return}
-  closeModal();watchAccess();render();
-  toast(r==="admin"?"Bạn đã là quản trị viên.":"Mã đúng. Giờ bạn thêm và sửa lịch được rồi.");
-  if(!S.people[S.uid])setTimeout(openWho,600);
-}
 function openRequest(){
   const cur=(S.myReq&&S.myReq.memberId)||(S.people[S.uid]&&S.people[S.uid].memberId)||"";
   openModal(`<h2>Xin quyền sửa</h2><p class="hint" style="margin-top:-6px">Trưởng đoàn sẽ thấy yêu cầu này và bấm duyệt. Trang tự chuyển sang chế độ sửa khi được duyệt.</p>
@@ -1126,23 +1181,25 @@ async function boot(){
     S.uid=u.uid;
   }catch(e){console.error(e);S.dbMissing=true;S.bootErr=(e&&e.code)||"";render();return}
   S.db=db;
-  /* Quyền: quản trị > người sửa > chỉ xem. Mã lấy từ ?ma=… (rồi xóa khỏi thanh địa chỉ) hoặc mã đã lưu trên máy */
+  /* Đăng nhập: mỗi lần mở trang chọn tên + nhập mã, hoặc chỉ xem. ?ma=… chỉ điền sẵn mã, rồi xóa khỏi thanh địa chỉ */
   const params=new URLSearchParams(location.search);
   const fromUrl=params.get("ma");
   if(fromUrl){params.delete("ma");const q=params.toString();history.replaceState(null,"",location.pathname+(q?"?"+q:"")+location.hash)}
+  S.prefillCode=fromUrl||"";
   S.readOnly=true;
-  await loadAccess();
-  if(fromUrl){const r=await tryCode(fromUrl);if(!r&&S.readOnly)toast("Mã trong link không đúng. Bạn đang ở chế độ chỉ xem.",true)}
-  if(S.readOnly)for(const c of [lsGet("lt-admin"),lsGet("lt-ma")])if(c&&S.readOnly)await tryCode(c);
-  if(!S.readOnly)await seedIfEmpty();
-  watchAccess();
+  await loadServerAccess();
+  const sess=sessGet();
+  if(sess&&sess.role&&!fromUrl){
+    /* Tải lại trong cùng tab: giữ phiên nếu máy vẫn còn quyền */
+    const ok=sess.role==="view"||(sess.role==="admin"&&S.server.admin)||(sess.role==="editor"&&(S.server.editor||S.server.admin));
+    if(ok)applyRole(sess.role);else{sessClear();S.gatePending=true}
+  }else S.gatePending=true;
+  if(!S.gatePending)watchAccess();
   const timer=setTimeout(()=>{if(!S.confirmed){S.stale=true;render()}},10000);
   const confirm=m=>{if(!m.fromCache&&!S.confirmed){S.confirmed=true;S.stale=false;clearTimeout(timer)}};
-  let askedWho=false;
-  db.collection("people").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.people=m;S.peopleLoaded=true;render();refreshAdminModal();
-    if(!askedWho&&!S.readOnly&&!q.metadata.fromCache&&!m[S.uid]){askedWho=true;setTimeout(()=>{if(!$("modal-root").firstChild&&!S.people[S.uid])openWho()},800)}},subErr);
+  db.collection("people").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.people=m;S.peopleLoaded=true;render();refreshAdminModal();maybeGate()},subErr);
   db.doc("trip/info").onSnapshot(s=>{S.trip=s.exists?s.data():null;S.tripLoaded=true;confirm(s.metadata);render()},subErr);
-  db.collection("members").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.members=m;S.membersLoaded=true;confirm(q.metadata);render()},subErr);
+  db.collection("members").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.members=m;S.membersLoaded=true;confirm(q.metadata);render();maybeGate()},subErr);
   db.collection("activities").onSnapshot(q=>{const m={};q.docs.forEach(d=>{const x=d.data();if(x&&typeof x.title==="string")m[d.id]=Object.assign({},x,{id:d.id})});S.acts=m;S.actsLoaded=true;confirm(q.metadata);render();checkEditConflict()},subErr);
   db.collection("history").orderBy("at","desc").limit(HIST_MAX+60).onSnapshot(q=>{S.history=q.docs.map(d=>Object.assign({},d.data(),{id:d.id}));S.historyLoaded=true;render()},subErr);
 }
