@@ -1,0 +1,12 @@
+{
+  "port": 5500,
+  "links": {
+    "Thử - quản trị viên (dữ liệu giả)": "http://localhost:5500/?demo",
+    "Thử - người xem (dữ liệu giả)": "http://localhost:5500/?demo&as=khach",
+    "Thử - xóa dữ liệu giả, làm lại từ đầu": "http://localhost:5500/?demo&reset",
+    "Dữ liệu THẬT, chạy trên máy (cẩn thận)": "http://localhost:5500/",
+    "Trang thật cho cả đoàn (GitHub Pages)": "https://tranhieu1611.github.io/Calendar_plan/",
+    "Firebase Console: luật bảo mật": "https://console.firebase.google.com/project/calendar-plan-08/firestore/databases/-default-/rules?hl=en",
+    "Firebase Console: dữ liệu": "https://console.firebase.google.com/project/calendar-plan-08/firestore/databases/-default-/data?hl=en"
+  }
+}

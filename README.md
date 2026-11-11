@@ -18,6 +18,9 @@ Tính năng: xem theo ngày và theo người, thêm/sửa/xóa hoạt động, 
 node dev-server.js
 ```
 
-- http://localhost:5500/?demo : dữ liệu giả, chỉ lưu trên trình duyệt của bạn. Thêm, sửa, xóa thoải mái.
-- http://localhost:5500/?demo&reset : xóa dữ liệu giả, nạp lại chuyến mẫu.
-- http://localhost:5500/ : dữ liệu **thật** của đoàn (cẩn thận).
+Tất cả link (thử, trang thật, Firebase Console) nằm trong [dev.config.json](dev.config.json) và được in ra khi chạy lệnh trên.
+
+- `?demo`: dữ liệu giả, vai trò quản trị viên. Mã thử: sửa `sua-thu`, quản trị `quantri-thu`.
+- `?demo&as=khach`: dữ liệu giả, vai trò người xem (máy khác). Mở song song hai tab để thử xin quyền và duyệt.
+- `?demo&reset`: xóa dữ liệu giả, làm lại từ đầu.
+- Không có `?demo`: dữ liệu **thật** của đoàn (cẩn thận).

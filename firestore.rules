@@ -2,21 +2,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ĐỔI "doi-ma-nay-di" thành mã bí mật của bạn (chữ, số, gạch ngang; nên dài 12 ký tự trở lên).
-    // Link sửa sẽ có dạng: https://trang-cua-ban/?ma=<mã này>
-    function editCode() { return 'doi-ma-nay-di'; }
+    // ĐỔI 2 MÃ DƯỚI ĐÂY trong Firebase Console (không sửa mã thật trong tệp trên GitHub).
+    // Chỉ dùng chữ không dấu, số, gạch ngang; nên dài 12 ký tự trở lên; 2 mã phải khác nhau.
+    function editCode()  { return 'doi-ma-sua-nay'; }       // mã sửa: gửi cho thành viên được sửa
+    function adminCode() { return 'doi-ma-quan-tri-nay'; }  // mã quản trị: chỉ trưởng đoàn biết
 
     function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
     function isEditor() {
-      return signedIn() && exists(/databases/$(database)/documents/editors/$(request.auth.uid));
+      return signedIn() && (isAdmin() || exists(/databases/$(database)/documents/editors/$(request.auth.uid)));
     }
 
-    // Danh sách máy được quyền sửa. Không ai đọc được của người khác.
-    match /editors/{uid} {
+    // Quản trị viên: tự thêm mình bằng mã quản trị.
+    match /admins/{uid} {
       allow get: if signedIn() && request.auth.uid == uid;
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['code', 'at'])
+        && request.resource.data.code == adminCode();
+    }
+
+    // Người được sửa: tự thêm mình bằng mã sửa, hoặc được quản trị viên duyệt.
+    match /editors/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list, delete: if isAdmin();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['code', 'at'])
         && request.resource.data.code == editCode();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['approvedBy', 'at'])
+        && request.resource.data.approvedBy == request.auth.uid;
+    }
+
+    // Yêu cầu xin quyền sửa: mỗi máy gửi yêu cầu của mình, quản trị viên xem và duyệt.
+    match /requests/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['memberId', 'note', 'at', 'status'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.note is string && request.resource.data.note.size() <= 300;
+      allow update, delete: if isAdmin();
     }
 
     // "Tôi là ai": mỗi máy chỉ sửa được dòng của chính mình.
@@ -25,7 +51,7 @@ service cloud.firestore {
       allow write: if isEditor() && request.auth.uid == uid;
     }
 
-    // Dữ liệu chuyến đi: ai có link đều đọc được, chỉ máy có mã sửa mới ghi được.
+    // Dữ liệu chuyến đi: ai có link đều đọc được, chỉ người được sửa mới ghi được.
     match /{col}/{id} {
       allow read: if col in ['trip', 'members', 'activities', 'history', 'meta'];
       allow write: if isEditor() && col in ['trip', 'members', 'activities', 'history', 'meta'];

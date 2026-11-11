@@ -1,24 +1,47 @@
 /* Chế độ thử (?demo): giả lập Firebase ngay trong trình duyệt.
-   Dữ liệu chỉ nằm trên máy này (localStorage), không đụng tới dữ liệu thật của đoàn. */
+   Dữ liệu chỉ nằm trên máy này (localStorage), không đụng tới dữ liệu thật của đoàn.
+   Mỗi mục lưu một khóa riêng, nên nhiều tab thử cùng ghi không đè mất dữ liệu của nhau. */
 (function () {
   "use strict";
-  var KEY = "lt-demo-store";
+  var PRE = "lt-demo:";
   var store = new Map();
+  var ls = null;
+  try { ls = window.localStorage; } catch (_) {}
+  function lsKeys() { var out = []; if (!ls) return out; for (var i = 0; i < ls.length; i++) { var k = ls.key(i); if (k && k.indexOf(PRE) === 0) out.push(k); } return out; }
   try {
     if (/[?&]reset\b/.test(location.search)) {
-      localStorage.removeItem(KEY);
-      history.replaceState(null, "", location.pathname + "?demo" + location.hash);
+      lsKeys().forEach(function (k) { ls.removeItem(k); });
+      history.replaceState(null, "", location.pathname + location.search.replace(/&reset\b/, "") + location.hash);
     }
-    var saved = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (saved) Object.keys(saved).forEach(function (k) { store.set(k, saved[k]); });
+    lsKeys().forEach(function (k) { store.set(k.slice(PRE.length), JSON.parse(ls.getItem(k))); });
   } catch (_) {}
-  store.set("editors/demo-user", { code: "demo" });
 
-  var listeners = new Set();
   var clone = function (o) { return o == null ? o : JSON.parse(JSON.stringify(o)); };
   var rid = function () { return Math.random().toString(36).slice(2, 12); };
-  function persist() { try { var o = {}; store.forEach(function (v, k) { o[k] = v; }); localStorage.setItem(KEY, JSON.stringify(o)); } catch (_) {} }
-  function changed() { persist(); setTimeout(function () { listeners.forEach(function (f) { f(); }); }, 30); }
+  function put(p, d) { store.set(p, clone(d)); try { ls && ls.setItem(PRE + p, JSON.stringify(d)); } catch (_) {} }
+  function del(p) { store.delete(p); try { ls && ls.removeItem(PRE + p); } catch (_) {} }
+
+  /* Vai trò thử: ?demo = quản trị viên; ?demo&as=khach = người xem (máy khác) */
+  var asMatch = /[?&]as=([A-Za-z0-9_-]{1,20})/.exec(location.search);
+  var uid = asMatch ? "demo-" + asMatch[1] : "demo-admin";
+  var CODES = { edit: "sua-thu", admin: "quantri-thu" };
+  window.LT_DEMO_CODES = CODES;
+  if (!asMatch && !store.has("admins/demo-admin")) put("admins/demo-admin", { code: CODES.admin, at: Date.now() });
+
+  function deny() { var e = new Error("permission-denied"); e.code = "permission-denied"; return Promise.reject(e); }
+  /* Giả lập phần luật bảo mật liên quan tới mã */
+  function allowed(p, d) {
+    var parts = p.split("/");
+    if (parts[0] === "admins") return parts[1] === uid && d.code === CODES.admin && !store.has(p);
+    if (parts[0] === "editors") {
+      if (d.approvedBy) return store.has("admins/" + uid);
+      return parts[1] === uid && d.code === CODES.edit && !store.has(p);
+    }
+    return true;
+  }
+
+  var listeners = new Set();
+  function changed() { setTimeout(function () { listeners.forEach(function (f) { f(); }); }, 30); }
   function snapDoc(p) {
     var d = store.get(p);
     return { id: p.split("/").pop(), exists: d !== undefined, data: function () { return clone(d); }, metadata: { fromCache: false, hasPendingWrites: false } };
@@ -27,9 +50,9 @@
     return {
       id: p.split("/").pop(), path: p,
       get: function () { return Promise.resolve(snapDoc(p)); },
-      set: function (d) { store.set(p, clone(d)); changed(); return Promise.resolve(); },
-      update: function (d) { store.set(p, Object.assign({}, store.get(p), clone(d))); changed(); return Promise.resolve(); },
-      delete: function () { store.delete(p); changed(); return Promise.resolve(); },
+      set: function (d) { if (!allowed(p, d || {})) return deny(); put(p, d); changed(); return Promise.resolve(); },
+      update: function (d) { put(p, Object.assign({}, store.get(p), clone(d))); changed(); return Promise.resolve(); },
+      delete: function () { del(p); changed(); return Promise.resolve(); },
       onSnapshot: function (cb) { var f = function () { cb(snapDoc(p)); }; listeners.add(f); setTimeout(f, 60); return function () { listeners.delete(f); }; }
     };
   }
@@ -57,10 +80,18 @@
     enablePersistence: function () { return Promise.resolve(); },
     batch: function () {
       var ops = [];
-      return { set: function (r, d) { ops.push(function () { store.set(r.path, clone(d)); }); }, commit: function () { ops.forEach(function (f) { f(); }); changed(); return Promise.resolve(); } };
+      return { set: function (r, d) { ops.push(function () { put(r.path, d); }); }, commit: function () { ops.forEach(function (f) { f(); }); changed(); return Promise.resolve(); } };
     }
   };
-  var user = { uid: "demo-user" };
+  /* Đồng bộ giữa các tab đang mở chế độ thử */
+  window.addEventListener("storage", function (e) {
+    if (e.key === null) { store.clear(); changed(); return; }
+    if (e.key.indexOf(PRE) !== 0) return;
+    var p = e.key.slice(PRE.length);
+    try { if (e.newValue == null) store.delete(p); else store.set(p, JSON.parse(e.newValue)); } catch (_) {}
+    changed();
+  });
+  var user = { uid: uid };
   window.firebase = {
     initializeApp: function () {},
     firestore: function () { return db; },

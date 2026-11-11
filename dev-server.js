@@ -5,7 +5,10 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = __dirname;
-const PORT = Number(process.env.PORT) || 5500;
+let CONFIG = { port: 5500, links: {} };
+try { CONFIG = Object.assign(CONFIG, JSON.parse(fs.readFileSync(path.join(ROOT, "dev.config.json"), "utf8"))); }
+catch (e) { console.warn("Không đọc được dev.config.json, dùng cổng 5500."); }
+const PORT = Number(process.env.PORT) || Number(CONFIG.port) || 5500;
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -30,9 +33,10 @@ http.createServer((req, res) => {
   });
 }).listen(PORT, "127.0.0.1", () => {
   console.log("");
-  console.log("  Thử với dữ liệu giả (an toàn):  http://localhost:" + PORT + "/?demo");
-  console.log("  Xóa dữ liệu giả, làm lại từ đầu: http://localhost:" + PORT + "/?demo&reset");
-  console.log("  Dữ liệu THẬT của đoàn:           http://localhost:" + PORT + "/   (cẩn thận, thay đổi là thật)");
+  console.log("  Các link (sửa trong dev.config.json):");
+  const names = Object.keys(CONFIG.links || {});
+  const w = Math.max(0, ...names.map(n => n.length));
+  names.forEach(n => console.log("  " + n.padEnd(w) + "  " + CONFIG.links[n]));
   console.log("");
   console.log("  Nhấn Ctrl+C để dừng.");
 });

@@ -50,6 +50,12 @@ Trang được đăng bằng GitHub Pages từ kho này, dữ liệu chung lưu 
    - **Link sửa**: gửi vào nhóm Zalo hoặc Messenger riêng của 8 người. Mỗi người mở link một lần, chọn tên mình là xong. Từ lần sau, mở link thường cũng sửa được.
    - **Link xem**: gửi cho người chỉ cần xem, ví dụ bố mẹ. Họ chỉ xem được, không sửa được.
 
+## Phân quyền: quản trị, người sửa, người xem
+- **Quản trị viên (trưởng đoàn):** mở trang, bấm **Nhập mã sửa** và nhập **mã quản trị**. Mỗi trình duyệt chỉ cần nhập một lần. Quản trị viên thấy nút **Yêu cầu sửa** để duyệt hoặc từ chối.
+- **Người sửa:** nhập **mã sửa** do trưởng đoàn gửi riêng, hoặc bấm **Xin quyền sửa** rồi chờ trưởng đoàn duyệt. Được duyệt xong, trang tự chuyển sang chế độ sửa.
+- **Người xem:** chỉ xem. Gửi **link xem** cho cả đoàn là đủ.
+- Hai mã nằm trong luật bảo mật (`editCode` và `adminCode`). Chỉ đổi trong Firebase Console, không sửa mã thật trong tệp trên GitHub.
+
 ## Lưu ý
 - Ai có link sửa đều thêm, sửa, xóa được, kể cả khi link bị chuyển tiếp cho người ngoài. Nếu link bị lộ: đổi mã trong Rules rồi gửi link mới. Những máy đã vào trước vẫn giữ quyền sửa. Muốn chặn hẳn, xóa các mục trong **Firestore → Data → editors**.
 - Tùy chọn "Chỉ người tạo hoạt động hoặc chủ trang mới được sửa" chỉ là chặn trên giao diện.
