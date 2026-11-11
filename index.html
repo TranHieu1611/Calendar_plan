@@ -248,6 +248,10 @@ textarea.in{min-height:70px;resize:vertical}
 .chip:disabled{opacity:.55;cursor:not-allowed}
 .peoplepick label.taken{cursor:not-allowed;opacity:.55}
 .btn.del.armed{background:var(--danger);color:var(--surface);border-color:var(--danger)}
+.discard-bar{position:sticky;top:-18px;z-index:2;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--warn-soft);color:var(--ink);border-radius:10px;padding:8px 10px;margin:-4px 0 12px;box-shadow:var(--shadow)}
+.discard-btns{display:flex;gap:6px}
+.edit-notice{margin:0 0 12px;background:var(--danger-soft);border-radius:8px;padding:8px 10px}
+.modal{overscroll-behavior:contain;max-height:92dvh}
 .mlist{display:flex;flex-direction:column;gap:8px}
 .mrow{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)}
 .mrow-b{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
@@ -634,8 +638,35 @@ function openModal(html,onClose){
   modalClose=onClose||null;
   const f=root.querySelector("[autofocus],input,select,textarea,button");if(f&&window.innerWidth>640)f.focus();
   document.body.style.overflow="hidden";
+  modalInit=formState();
 }
 function closeModal(){$("modal-root").innerHTML="";document.body.style.overflow="";if(modalClose)modalClose();modalClose=null}
+/* Trạng thái các ô nhập trong form của popup, để biết người dùng đã nhập gì chưa */
+let modalInit="";
+function formState(){return [...$("modal-root").querySelectorAll("form input,form select,form textarea")].map(e=>e.type==="checkbox"||e.type==="radio"?(e.checked?"1":"0"):e.value).join("\u0001")}
+function isDirty(){return !!$("modal-root").querySelector("form")&&formState()!==modalInit}
+/* Đóng theo yêu cầu người dùng (Hủy, Esc, bấm nền tối): hỏi lại nếu đã nhập */
+function requestClose(){
+  if(!isDirty()){closeModal();return}
+  const m=$("modal-root").querySelector(".modal");if(!m)return;
+  if(m.querySelector(".discard-bar")){m.querySelector(".discard-bar [data-act='keep']").focus();return}
+  m.insertAdjacentHTML("afterbegin",`<div class="discard-bar" role="alertdialog" aria-label="Bỏ thay đổi?"><span><b>Bỏ những gì bạn vừa nhập?</b></span><span class="discard-btns"><button type="button" class="btn sm" data-act="keep">Tiếp tục nhập</button><button type="button" class="btn sm del" data-act="discard">Bỏ thay đổi</button></span></div>`);
+  m.scrollTop=0;m.querySelector(".discard-bar [data-act='keep']").focus();
+}
+/* Chỉ đóng khi bấm nhả chuột đúng trên nền tối, không đóng khi kéo bôi đen từ trong ra ngoài */
+let downOnBg=false;
+document.addEventListener("pointerdown",e=>{downOnBg=!!(e.target&&e.target.classList&&e.target.classList.contains("modal-bg"))},true);
+/* Popup sửa: báo khi người khác vừa sửa hoặc xóa hoạt động đang mở */
+function checkEditConflict(){
+  const form=$("act-form");if(!form||!form.dataset.id)return;
+  const cur=S.acts[form.dataset.id];const box=$("edit-notice");if(!box)return;
+  let msg="";
+  if(!cur)msg="Hoạt động này vừa bị người khác xóa. Bạn có thể đóng lại, hoặc khôi phục trong tab Lịch sử.";
+  else if(String(cur.updatedAt||"")!==form.dataset.ver){
+    msg=`${actorName(cur.updatedBy)} vừa sửa hoạt động này lúc ${fmtTs(cur.updatedAt)}. Khi bạn bấm Lưu, chỉ những ô bạn đã sửa được ghi, các ô khác giữ bản mới của ${actorName(cur.updatedBy)}.`;
+  }
+  box.hidden=!msg;box.querySelector("span").textContent=msg;
+}
 
 /* ---------- activity form ---------- */
 function actForm(a,defDate,defStart,defEnd){
@@ -644,7 +675,8 @@ function actForm(a,defDate,defStart,defEnd){
   const tk=a?typeOf(a):"see";
   const sel=a?validPeople(a.people):(S.filter!=="all"?[S.filter]:MIDS.slice());
   return `<h2>${a?"Sửa hoạt động":"Thêm hoạt động"}</h2>
-  <form id="act-form" novalidate data-id="${a?esc(a.id):""}"><div class="fields">
+  <form id="act-form" novalidate data-id="${a?esc(a.id):""}" data-ver="${a?esc(String(a.updatedAt||"")):""}" data-orig="${a?esc(JSON.stringify(Object.fromEntries(ACT_FIELDS.map(f=>[f,f==="people"?validPeople(a.people):(a[f]??"")])))):""}">
+  <div class="alert edit-notice" id="edit-notice" hidden>${IC.warn}<span></span></div><div class="fields">
     <label class="f">Tên hoạt động <span class="req" aria-hidden="true">*</span><input class="in" id="f-title" maxlength="120" value="${a?esc(a.title):""}" placeholder="Ví dụ: Ăn trưa bánh căn" autofocus></label>
     <div class="ferr" id="e-title" hidden></div>
     <label class="f">Ngày<select class="in" id="f-date">${opts}</select></label>
@@ -680,7 +712,11 @@ async function saveAct(form){
   const id=form.dataset.id;const now=Date.now();const btn=$("f-save");btn.disabled=true;
   try{
     if(id){
-      const cur=S.acts[id];if(!cur){toast("Hoạt động này vừa bị người khác xóa.",true);closeModal();return}
+      const cur=S.acts[id];if(!cur){toast("Hoạt động này vừa bị người khác xóa. Bạn có thể khôi phục trong tab Lịch sử.",true);return}
+      /* Chỉ ghi những ô người dùng đã sửa so với lúc mở; ô không đụng tới giữ bản mới nhất của người khác */
+      let orig=null;try{orig=JSON.parse(form.dataset.orig||"null")}catch(_){}
+      if(orig){ACT_FIELDS.forEach(f=>{const same=f==="people"?validPeople(orig.people).join()===v.people.join():String(orig[f])===String(v[f]);if(same)v[f]=f==="people"?validPeople(cur.people):(cur[f]??"")})}
+      if(v.start&&v.end&&toMin(v.end)<=toMin(v.start)){showErr("e-time","Sau khi gộp với bản người khác vừa sửa, giờ kết thúc đang trước giờ bắt đầu. Hãy sửa lại giờ.",["f-start","f-end"]);return}
       const changes=[];
       ACT_FIELDS.forEach(f=>{const b=f==="people"?validPeople(cur.people):(cur[f]??""),a=v[f];const same=f==="people"?b.join()===a.join():String(b)===String(a);if(!same)changes.push({f,b,a})});
       if(!changes.length){closeModal();toast("Không có gì thay đổi.");return}
@@ -811,9 +847,11 @@ function openCopy(){
 document.addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");if(!el)return;
   const act=el.dataset.act;
-  if(act==="modal-bg"){if(e.target===el)closeModal();return}
+  if(act==="modal-bg"){if(e.target===el&&downOnBg)requestClose();downOnBg=false;return}
   switch(act){
-    case"close":closeModal();break;
+    case"close":requestClose();break;
+    case"keep":{const b=el.closest(".discard-bar");if(b)b.remove();const f=$("modal-root").querySelector("form input,form textarea");if(f)f.focus();break}
+    case"discard":closeModal();break;
     case"filter":S.filter=el.dataset.id;render();break;
     case"add":if(!S.readOnly&&S.trip)openModal(actForm(null,el.dataset.date,el.dataset.start,el.dataset.end));break;
     case"goto":S.day=el.dataset.date||"all";render();window.scrollTo({top:0});break;
@@ -855,7 +893,7 @@ document.addEventListener("submit",e=>{
   if(e.target.id==="code-form")submitCode();
   if(e.target.id==="req-form")submitRequest();
 });
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("modal-root").firstChild)closeModal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("modal-root").firstChild){e.preventDefault();requestClose()}});
 function route(){const h=(location.hash||"").slice(1);S.tab=["ngay","nguoi","lich-su"].includes(h)?h:"ngay";render()}
 window.addEventListener("hashchange",route);
 
@@ -1103,7 +1141,7 @@ async function boot(){
     if(!askedWho&&!S.readOnly&&!q.metadata.fromCache&&!m[S.uid]){askedWho=true;setTimeout(()=>{if(!$("modal-root").firstChild&&!S.people[S.uid])openWho()},800)}},subErr);
   db.doc("trip/info").onSnapshot(s=>{S.trip=s.exists?s.data():null;S.tripLoaded=true;confirm(s.metadata);render()},subErr);
   db.collection("members").onSnapshot(q=>{const m={};q.docs.forEach(d=>{m[d.id]=d.data()});S.members=m;S.membersLoaded=true;confirm(q.metadata);render()},subErr);
-  db.collection("activities").onSnapshot(q=>{const m={};q.docs.forEach(d=>{const x=d.data();if(x&&typeof x.title==="string")m[d.id]=Object.assign({},x,{id:d.id})});S.acts=m;S.actsLoaded=true;confirm(q.metadata);render()},subErr);
+  db.collection("activities").onSnapshot(q=>{const m={};q.docs.forEach(d=>{const x=d.data();if(x&&typeof x.title==="string")m[d.id]=Object.assign({},x,{id:d.id})});S.acts=m;S.actsLoaded=true;confirm(q.metadata);render();checkEditConflict()},subErr);
   db.collection("history").orderBy("at","desc").limit(HIST_MAX+60).onSnapshot(q=>{S.history=q.docs.map(d=>Object.assign({},d.data(),{id:d.id}));S.historyLoaded=true;render()},subErr);
 }
 render();
