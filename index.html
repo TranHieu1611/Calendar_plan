@@ -410,7 +410,7 @@ function renderHeader(){
   box.innerHTML=`<div class="eyebrow">${esc(t.destination||"Chưa có điểm đến")}</div><h1>${esc(t.name||"Chuyến đi chưa đặt tên")}</h1>
   <div class="trip-meta">${esc(fmtD(t.startDate))} → ${esc(fmtD(t.endDate))}${days?` · ${days} ngày`:""} · 8 thành viên</div>`;
   const meP=S.people[S.uid];
-  const meChip=S.readOnly?`<div class="me-chip">Chế độ chỉ xem · <button class="btn ghost" data-act="code" style="min-height:0;padding:2px 6px">Nhập mã sửa</button></div>`:`<div class="me-chip">${meP&&MIDS.includes(meP.memberId)?`${av(meP.memberId)}Bạn là <b>${esc(mName(meP.memberId))}</b>`:"Bạn chưa chọn tên"}${S.isAdmin?` <span class="role">Quản trị</span>`:` <span class="role ed">Được sửa</span>`} · <button class="btn ghost" data-act="whoami" style="min-height:0;padding:2px 6px">Đổi</button></div>`;
+  const meChip=S.readOnly?`<div class="me-chip">Chế độ chỉ xem · <button class="btn ghost" data-act="code" style="min-height:0;padding:2px 6px">Nhập mã sửa</button></div>`:`<div class="me-chip">${meP&&MIDS.includes(meP.memberId)?`${av(meP.memberId)}Bạn là <b>${esc(mName(meP.memberId))}</b>`:"Bạn chưa chọn tên"}${S.isAdmin?` <span class="role">Quản trị</span>`:` <span class="role ed">Được sửa</span>`} · <button class="btn ghost" data-act="whoami" style="min-height:0;padding:2px 6px">Đổi tên</button>${S.isAdmin?"":` · <button class="btn ghost" data-act="code" data-admin="1" style="min-height:0;padding:2px 6px">Nhập mã quản trị</button>`}</div>`;
   box.insertAdjacentHTML("beforeend",meChip);
   $("top-actions").innerHTML=`<button class="btn" data-act="copy">${IC.copy}<span class="lbl">Sao chép lịch</span></button>
   <button class="btn" data-act="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span class="lbl">Chia sẻ</span></button>
@@ -866,7 +866,7 @@ document.addEventListener("click",e=>{
     case"whoami":openWho();break;
     case"pick-me":pickMe(el.dataset.id,el);break;
     case"share":openShare();break;
-    case"code":openCode();break;
+    case"code":openCode(el.dataset.admin==="1"||(!S.readOnly&&!S.isAdmin));break;
     case"req":openRequest();break;
     case"requests":openRequests();break;
     case"approve":decide(el.dataset.id,true,el);break;
@@ -974,17 +974,19 @@ function watchAccess(){
   }
 }
 function pendingReqs(){return (S.requests||[]).filter(r=>r.status==="pending").sort((a,b)=>(a.at||0)-(b.at||0))}
-function openCode(){
-  openModal(`<h2>Nhập mã sửa</h2><form id="code-form" novalidate><div class="fields">
-  <label class="f">Mã do trưởng đoàn gửi<input class="in" id="c-code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ví dụ: dalat-xxxx"></label>
+function openCode(adminOnly){
+  openModal(`<h2>${adminOnly?"Nhập mã quản trị":"Nhập mã sửa"}</h2><form id="code-form" novalidate><div class="fields">
+  ${adminOnly?`<p class="hint" style="margin:-6px 0 0">Dành cho trưởng đoàn. Mã quản trị là mã <code>adminCode</code> bạn đặt trong luật bảo mật Firebase.</p>`:""}
+  <label class="f">${adminOnly?"Mã quản trị":"Mã do trưởng đoàn gửi"}<input class="in" id="c-code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${adminOnly?"Mã quản trị":"Ví dụ: dalat-xxxx"}"></label>
   <div class="ferr" id="e-code" hidden></div></div>
   <div class="mfoot"><button type="button" class="btn" data-act="close">Hủy</button><button type="submit" class="btn primary" id="c-save">Xác nhận</button></div></form>`);
 }
 async function submitCode(){
   const btn=$("c-save");btn.disabled=true;
+  const wasEditor=!S.readOnly;
   const r=await tryCode($("c-code").value);
   btn.disabled=false;
-  if(!r){showErr("e-code","Mã không đúng. Kiểm tra lại chữ hoa, chữ thường và dấu gạch ngang.",["c-code"]);return}
+  if(!r){showErr("e-code",wasEditor?"Mã quản trị không đúng. Kiểm tra lại chữ hoa, chữ thường và dấu gạch ngang.":"Mã không đúng. Kiểm tra lại chữ hoa, chữ thường và dấu gạch ngang.",["c-code"]);return}
   closeModal();watchAccess();render();
   toast(r==="admin"?"Bạn đã là quản trị viên.":"Mã đúng. Giờ bạn thêm và sửa lịch được rồi.");
   if(!S.people[S.uid])setTimeout(openWho,600);
